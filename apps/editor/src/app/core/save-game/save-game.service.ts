@@ -1,7 +1,7 @@
 import { computed, Injectable, Signal, signal } from '@angular/core';
 import { decode_save, encode_save, inspect_save } from '@coral/save-parser';
 
-type SaveCompatibility = 'tested' | 'newerUntested' | 'olderUntested';
+export type SaveCompatibility = 'tested' | 'newerUntested' | 'olderUntested';
 
 export type SaveInspection = {
   outerVersion: number;
@@ -12,6 +12,48 @@ export type SaveInspection = {
   innerLen: number;
   chunkCount: number;
 };
+
+const SAVE_COMPATIBILITIES = ['tested', 'newerUntested', 'olderUntested'] as const;
+
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function isSaveCompatibility(value: unknown): value is SaveCompatibility {
+  return typeof value === 'string' && SAVE_COMPATIBILITIES.includes(value as SaveCompatibility);
+}
+
+function assertNumberField(value: unknown, fieldName: keyof SaveInspection): asserts value is number {
+  if (typeof value !== 'number') {
+    throw new Error(`Invalid save inspection from parser: ${String(fieldName)} must be a number.`);
+  }
+}
+
+function assertSaveInspection(value: unknown): SaveInspection {
+  if (!value || typeof value !== 'object') {
+    throw new Error('Invalid save inspection from parser: expected an object.');
+  }
+
+  const inspection = value as Partial<SaveInspection>;
+  assertNumberField(inspection.outerVersion, 'outerVersion');
+  assertNumberField(inspection.compressedLen, 'compressedLen');
+  assertNumberField(inspection.innerLen, 'innerLen');
+  assertNumberField(inspection.chunkCount, 'chunkCount');
+
+  if (!isSaveCompatibility(inspection.compatibility)) {
+    throw new Error('Invalid save inspection from parser: compatibility is unknown.');
+  }
+
+  if (typeof inspection.exportAllowed !== 'boolean') {
+    throw new Error('Invalid save inspection from parser: exportAllowed must be a boolean.');
+  }
+
+  if (inspection.warning !== undefined && typeof inspection.warning !== 'string') {
+    throw new Error('Invalid save inspection from parser: warning must be a string.');
+  }
+
+  return inspection as SaveInspection;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -33,7 +75,7 @@ export class SaveGameService {
           throw new Error('Unable to read save file.');
         }
 
-        const inspection = inspect_save(target) as SaveInspection;
+        const inspection = assertSaveInspection(inspect_save(target));
         const binarySave = decode_save(target);
 
         this.#rawData.set({ content: target, name: saveFile.name });
@@ -45,11 +87,14 @@ export class SaveGameService {
         this.#rawData.set(null);
         this.inspection.set(null);
         this.decodedData.set(null);
-        this.errorMessage.set(e instanceof Error ? e.message : String(e));
+        this.errorMessage.set(errorText(e));
         this.status.set('ERROR');
         console.error(e);
       }
     });
+    this.#rawData.set(null);
+    this.inspection.set(null);
+    this.decodedData.set(null);
     this.status.set('PROCESSING');
     this.errorMessage.set(null);
     reader.readAsArrayBuffer(saveFile);
@@ -120,8 +165,8 @@ export class SaveGameService {
       this.status.set('SUCCESS');
       this.errorMessage.set(null);
     } catch (e) {
-      this.status.set('ERROR');
-      this.errorMessage.set(e instanceof Error ? e.message : String(e));
+      this.status.set(this.decodedData() ? 'SUCCESS' : 'ERROR');
+      this.errorMessage.set(`Export failed: ${errorText(e)}`);
       console.error(e);
     }
   }
