@@ -15,13 +15,15 @@ Expected local fixture names:
 ```text
 fixtures/saves/v201.sav
 fixtures/saves/v208.sav
+fixtures/saves/v220.sav
 ```
 
 Suggested copy commands:
 
 ```bash
 cp /home/ziwdon/.steam/debian-installation/steamapps/compatdata/1158160/pfx/drive_c/users/steamuser/AppData/Local/ProjectCoral/Saved/SaveGames/OldVersion/DailySave_0_v201.sav fixtures/saves/v201.sav
-cp /home/ziwdon/.steam/debian-installation/steamapps/compatdata/1158160/pfx/drive_c/users/steamuser/AppData/Local/ProjectCoral/Saved/SaveGames/World_0/ManualSave0.sav fixtures/saves/v208.sav
+cp /home/ziwdon/.steam/debian-installation/steamapps/compatdata/1158160/pfx/drive_c/users/steamuser/AppData/Local/ProjectCoral/Saved/SaveGames/World_0/VersionUpgradeBackups/VersionBackupSave_v208.sav fixtures/saves/v208.sav
+cp /home/ziwdon/.steam/debian-installation/steamapps/compatdata/1158160/pfx/drive_c/users/steamuser/AppData/Local/ProjectCoral/Saved/SaveGames/World_0/ManualSave0.sav fixtures/saves/v220.sav
 ```
 
 .sav files and manifest.local.json are gitignored.

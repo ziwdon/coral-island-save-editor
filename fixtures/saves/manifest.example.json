@@ -9,6 +9,12 @@
     {
       "file": "v208.sav",
       "saveVersion": 208,
+      "purpose": "Parser coverage for version-upgrade backup Coral Island saves.",
+      "sourceHint": "World_0/VersionUpgradeBackups/VersionBackupSave_v208.sav"
+    },
+    {
+      "file": "v220.sav",
+      "saveVersion": 220,
       "purpose": "Parser coverage for current manual Coral Island saves.",
       "sourceHint": "World_0/ManualSave0.sav"
     }

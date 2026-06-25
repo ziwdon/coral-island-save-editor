@@ -15,7 +15,7 @@ pub const HEADER_SIZE: usize = 48;
 pub const CHUNK_SIZE: usize = 0x20000;
 pub const CHUNK_SIZE_IN_BYTES: [u8; 4] = [0x00, 0x00, 0x02, 0x00];
 pub const NULL_HEADER: [u8; 4] = [0x00, 0x00, 0x00, 0x00];
-pub const TESTED_SAVE_VERSIONS: &[i32] = &[201, 208];
+pub const TESTED_SAVE_VERSIONS: &[i32] = &[201, 208, 220];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -421,8 +421,9 @@ mod tests {
     fn compatibility_classifies_versions() {
         assert_eq!(compatibility_for_version(201), CompatibilityLevel::Tested);
         assert_eq!(compatibility_for_version(208), CompatibilityLevel::Tested);
+        assert_eq!(compatibility_for_version(220), CompatibilityLevel::Tested);
         assert_eq!(
-            compatibility_for_version(209),
+            compatibility_for_version(221),
             CompatibilityLevel::NewerUntested
         );
         assert_eq!(
