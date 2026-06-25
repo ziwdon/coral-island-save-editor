@@ -2,7 +2,8 @@ use std::fs;
 use std::path::PathBuf;
 
 use save_parser::core::{
-    decode_save_bytes, inspect_save_bytes, round_trip_save_bytes, CompatibilityLevel,
+    decode_save_bytes, encode_save_bytes, inspect_save_bytes, round_trip_save_bytes,
+    CompatibilityLevel,
 };
 use uesave::Save;
 
@@ -109,6 +110,12 @@ fn round_trips_known_fixtures_without_edits_when_present() {
 
         let report = round_trip_save_bytes(&raw_save)
             .unwrap_or_else(|error| panic!("{} should round trip without edits: {}", name, error));
+        let inner_save = decode_save_bytes(&raw_save)
+            .unwrap_or_else(|error| panic!("{} should decode before round trip: {}", name, error));
+        let encoded_save = encode_save_bytes(&raw_save, &inner_save)
+            .unwrap_or_else(|error| panic!("{} should encode without edits: {}", name, error));
+        let encoded_inner_save = decode_save_bytes(&encoded_save)
+            .unwrap_or_else(|error| panic!("{} should decode after round trip: {}", name, error));
 
         assert_eq!(report.original.outer_version, report.encoded.outer_version);
         assert!(report.original.inner_len > 0, "{} original inner_len", name);
@@ -123,5 +130,6 @@ fn round_trips_known_fixtures_without_edits_when_present() {
             "{} encoded chunk_count",
             name
         );
+        assert_save_data_exists(&encoded_inner_save);
     }
 }
