@@ -3,9 +3,11 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "build-save-parser": "nx run save_parser:build-wasm",
     "build-demo": "nx run save_parser:build-wasm && nx run demo:build:production",
     "commit": "git-cz",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test-save-parser": "nx run save_parser:test"
   },
   "private": true,
   "lint-staged": {
