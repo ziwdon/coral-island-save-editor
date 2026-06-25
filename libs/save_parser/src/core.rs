@@ -250,15 +250,26 @@ pub fn replace_compressed_save_data(
 }
 
 pub fn read_inner_save_bytes(outer_save: &Save) -> Result<Vec<u8>, String> {
-    let compressed_bytes = read_compressed_save_data(outer_save)?;
-    let mut decompressed_bytes = decompress_save_data(compressed_bytes)?;
+    let decompressed_bytes = read_decompressed_inner_save_bytes(outer_save)?;
+    let inner_save_bytes = inner_save_payload_bytes(&decompressed_bytes)?;
 
+    // A safe owned Vec cannot point at the middle of another Vec allocation, so
+    // this compatibility helper must copy the payload. Decode paths below parse
+    // from a borrowed slice to avoid copying or moving the full inner save.
+    Ok(inner_save_bytes.to_vec())
+}
+
+fn read_decompressed_inner_save_bytes(outer_save: &Save) -> Result<Vec<u8>, String> {
+    let compressed_bytes = read_compressed_save_data(outer_save)?;
+    decompress_save_data(compressed_bytes)
+}
+
+fn inner_save_payload_bytes(decompressed_bytes: &[u8]) -> Result<&[u8], String> {
     if decompressed_bytes.len() < 4 {
         return Err("Decompressed inner save is shorter than its size prefix".to_string());
     }
 
-    decompressed_bytes.drain(..4);
-    Ok(decompressed_bytes)
+    Ok(&decompressed_bytes[4..])
 }
 
 pub fn decode_inner_save(inner_save_bytes: &[u8]) -> Result<Save, String> {
@@ -269,15 +280,17 @@ pub fn decode_inner_save(inner_save_bytes: &[u8]) -> Result<Save, String> {
 
 pub fn decode_save_bytes(raw_save: &[u8]) -> Result<Save, String> {
     let outer_save = read_outer_save(raw_save)?;
-    let inner_save_bytes = read_inner_save_bytes(&outer_save)?;
-    decode_inner_save(&inner_save_bytes)
+    let decompressed_bytes = read_decompressed_inner_save_bytes(&outer_save)?;
+    let inner_save_bytes = inner_save_payload_bytes(&decompressed_bytes)?;
+    decode_inner_save(inner_save_bytes)
 }
 
 pub fn inspect_save_bytes(raw_save: &[u8]) -> Result<SaveInspection, String> {
     let outer_save = read_outer_save(raw_save)?;
     let outer_version = read_outer_version(&outer_save)?;
     let compressed_bytes = read_compressed_save_data(&outer_save)?;
-    let inner_save_bytes = read_inner_save_bytes(&outer_save)?;
+    let decompressed_bytes = decompress_save_data(compressed_bytes)?;
+    let inner_save_bytes = inner_save_payload_bytes(&decompressed_bytes)?;
     let compatibility = compatibility_for_version(outer_version);
     let export_allowed = matches!(compatibility, CompatibilityLevel::Tested);
     let warning = match compatibility {
@@ -415,6 +428,28 @@ mod tests {
         assert_eq!(
             compatibility_for_version(200),
             CompatibilityLevel::OlderUntested
+        );
+    }
+
+    #[test]
+    fn inner_save_payload_bytes_borrows_after_size_prefix() {
+        let decompressed = vec![4, 0, 0, 0, 10, 20, 30];
+        let payload =
+            inner_save_payload_bytes(&decompressed).expect("payload slice should be returned");
+
+        assert_eq!(payload, &[10, 20, 30]);
+        assert_eq!(
+            payload.as_ptr(),
+            decompressed[4..].as_ptr(),
+            "payload should borrow the decompressed buffer without copying"
+        );
+    }
+
+    #[test]
+    fn inner_save_payload_bytes_rejects_missing_size_prefix() {
+        assert_eq!(
+            inner_save_payload_bytes(&[1, 2, 3]),
+            Err("Decompressed inner save is shorter than its size prefix".to_string())
         );
     }
 
