@@ -65,10 +65,16 @@ export class SaveGameService {
   readonly errorMessage = signal<string | null>(null);
   readonly canExport = computed(() => !!this.decodedData() && !!this.inspection()?.exportAllowed);
   readonly #rawData = signal<null | { name: string; content: ArrayBuffer }>(null);
+  #parseRequestId = 0;
 
   parseSaveGame(saveFile: File) {
+    const parseRequestId = ++this.#parseRequestId;
     const reader = new FileReader();
     reader.addEventListener('loadend', (event) => {
+      if (parseRequestId !== this.#parseRequestId) {
+        return;
+      }
+
       try {
         const target = event.target?.result as ArrayBuffer | undefined;
         if (!target) {
