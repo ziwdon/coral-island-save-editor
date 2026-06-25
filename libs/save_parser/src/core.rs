@@ -6,7 +6,7 @@ use flate2::read::ZlibDecoder;
 use flate2::write::ZlibEncoder;
 use flate2::Compression;
 use serde::Serialize;
-use uesave::{ByteArray, PropertyInner, PropertyType, Save, ValueArray, ValueVec};
+use uesave::{ByteArray, Property, PropertyInner, PropertyType, Save, ValueArray, ValueVec};
 
 use crate::types;
 
@@ -184,29 +184,39 @@ pub fn read_outer_save(raw_save: &[u8]) -> Result<Save, String> {
     Save::read(&mut outer_save_buffer).map_err(|error| error.to_string())
 }
 
-pub fn read_outer_version(outer_save: &Save) -> Result<i32, String> {
-    let has_version = (&outer_save.root.properties)
+fn find_property<'a>(outer_save: &'a Save, property_name: &str) -> Option<&'a Property> {
+    (&outer_save.root.properties)
         .into_iter()
-        .any(|(key, _)| key.1 == "Version");
-    if !has_version {
-        return Err("Missing Version property".to_string());
-    }
+        .find_map(|(key, property)| (key.1 == property_name).then_some(property))
+}
 
-    match &outer_save.root.properties["Version"].inner {
+fn find_property_mut<'a>(
+    outer_save: &'a mut Save,
+    property_name: &str,
+) -> Option<&'a mut Property> {
+    outer_save
+        .root
+        .properties
+        .0
+        .iter_mut()
+        .find_map(|(key, property)| (key.1 == property_name).then_some(property))
+}
+
+pub fn read_outer_version(outer_save: &Save) -> Result<i32, String> {
+    let property = find_property(outer_save, "Version")
+        .ok_or_else(|| "Missing Version property".to_string())?;
+
+    match &property.inner {
         &PropertyInner::Int(save_version) => Ok(save_version),
         _ => Err("Invalid save version property type".to_string()),
     }
 }
 
 pub fn read_compressed_save_data(outer_save: &Save) -> Result<&Vec<u8>, String> {
-    let has_compressed_save_data = (&outer_save.root.properties)
-        .into_iter()
-        .any(|(key, _)| key.1 == "compressedSaveData");
-    if !has_compressed_save_data {
-        return Err("Missing compressedSaveData property".to_string());
-    }
+    let property = find_property(outer_save, "compressedSaveData")
+        .ok_or_else(|| "Missing compressedSaveData property".to_string())?;
 
-    match &outer_save.root.properties["compressedSaveData"].inner {
+    match &property.inner {
         PropertyInner::Array {
             value: property_value,
             ..
@@ -228,14 +238,10 @@ pub fn replace_compressed_save_data(
     outer_save: &mut Save,
     compressed_inner_save: Vec<u8>,
 ) -> Result<(), String> {
-    let has_compressed_save_data = (&outer_save.root.properties)
-        .into_iter()
-        .any(|(key, _)| key.1 == "compressedSaveData");
-    if !has_compressed_save_data {
-        return Err("Missing compressedSaveData property".to_string());
-    }
+    let property = find_property_mut(outer_save, "compressedSaveData")
+        .ok_or_else(|| "Missing compressedSaveData property".to_string())?;
 
-    outer_save.root.properties["compressedSaveData"].inner = PropertyInner::Array {
+    property.inner = PropertyInner::Array {
         array_type: PropertyType::ByteProperty,
         value: ValueArray::Base(ValueVec::Byte(ByteArray::Byte(compressed_inner_save))),
     };
@@ -245,13 +251,13 @@ pub fn replace_compressed_save_data(
 
 pub fn read_inner_save_bytes(outer_save: &Save) -> Result<Vec<u8>, String> {
     let compressed_bytes = read_compressed_save_data(outer_save)?;
-    let decompressed_bytes = decompress_save_data(compressed_bytes)?;
+    let mut decompressed_bytes = decompress_save_data(compressed_bytes)?;
 
     if decompressed_bytes.len() < 4 {
         return Err("Decompressed inner save is shorter than its size prefix".to_string());
     }
 
-    Ok(decompressed_bytes[4..].to_vec())
+    Ok(decompressed_bytes.split_off(4))
 }
 
 pub fn decode_inner_save(inner_save_bytes: &[u8]) -> Result<Save, String> {
@@ -346,6 +352,43 @@ pub fn round_trip_save_bytes(raw_save: &[u8]) -> Result<RoundTripReport, String>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use uesave::PropertyKey;
+
+    fn empty_save() -> Save {
+        serde_json::from_value(serde_json::json!({
+            "header": {
+                "magic": 0,
+                "save_game_version": 3,
+                "package_version": {
+                    "ue4": 0,
+                    "ue5": null
+                },
+                "engine_version_major": 5,
+                "engine_version_minor": 0,
+                "engine_version_patch": 0,
+                "engine_version_build": 0,
+                "engine_version": "",
+                "custom_format_version": 0,
+                "custom_format": []
+            },
+            "root": {
+                "save_game_type": "",
+                "properties": {}
+            },
+            "extra": []
+        }))
+        .expect("test save should deserialize")
+    }
+
+    fn compressed_save_data_property(bytes: Vec<u8>) -> Property {
+        Property {
+            id: None,
+            inner: PropertyInner::Array {
+                array_type: PropertyType::ByteProperty,
+                value: ValueArray::Base(ValueVec::Byte(ByteArray::Byte(bytes))),
+            },
+        }
+    }
 
     #[test]
     fn compression_round_trip_preserves_bytes() {
@@ -371,6 +414,44 @@ mod tests {
         assert_eq!(
             compatibility_for_version(200),
             CompatibilityLevel::OlderUntested
+        );
+    }
+
+    #[test]
+    fn property_readers_handle_nonzero_property_key_indexes() {
+        let mut save = empty_save();
+        save.root.properties.0.insert(
+            PropertyKey(1, "Version".to_string()),
+            Property {
+                id: None,
+                inner: PropertyInner::Int(208),
+            },
+        );
+        save.root.properties.0.insert(
+            PropertyKey(1, "compressedSaveData".to_string()),
+            compressed_save_data_property(vec![1, 2, 3]),
+        );
+
+        assert_eq!(read_outer_version(&save), Ok(208));
+        assert_eq!(
+            read_compressed_save_data(&save).map(|bytes| bytes.as_slice()),
+            Ok([1, 2, 3].as_slice())
+        );
+    }
+
+    #[test]
+    fn replace_compressed_save_data_handles_nonzero_property_key_indexes() {
+        let mut save = empty_save();
+        save.root.properties.0.insert(
+            PropertyKey(1, "compressedSaveData".to_string()),
+            compressed_save_data_property(vec![1, 2, 3]),
+        );
+
+        replace_compressed_save_data(&mut save, vec![4, 5, 6]).expect("replace should succeed");
+
+        assert_eq!(
+            read_compressed_save_data(&save).map(|bytes| bytes.as_slice()),
+            Ok([4, 5, 6].as_slice())
         );
     }
 }
