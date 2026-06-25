@@ -1,17 +1,27 @@
 <aside class="editor-sidebar flex flex-col h-dvh overflow-x-hidden overflow-y-auto sticky top-0 w-[450px]">
   <app-file-handler class="m-2" />
 
-  <span class="mx-2 mt-4" [attr.title]="!decodedData() ? 'Load a file to activate exporting' : null">
+  <span class="mx-2 mt-4" [attr.title]="!canExport() ? 'Load a compatible save before exporting' : null">
     <button
       class="border-white rounded-full disabled:opacity-30 border-2 text-white px-4 py-2 w-full hover:bg-white hover:text-black disabled:pointer-events-none font-bold"
-      [disabled]="!decodedData()"
+      [disabled]="!canExport()"
       (click)="save()"
     >
       export
     </button>
   </span>
 
-  @if (decodedData()) {
+  @if (inspection()?.warning) {
+  <ci-ui-card class="m-2">
+    <h3 class="mb-2">Compatibility warning</h3>
+    <p>{{ inspection()?.warning }}</p>
+  </ci-ui-card>
+  } @if (errorMessage()) {
+  <ci-ui-card class="m-2">
+    <h3 class="mb-2">Save error</h3>
+    <p>{{ errorMessage() }}</p>
+  </ci-ui-card>
+  } @if (decodedData()) {
   <hr class="m-4" />
   <h2 class="text-white text-xl font-bold m-2">Configurations</h2>
   <a

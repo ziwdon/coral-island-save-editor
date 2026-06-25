@@ -1,5 +1,17 @@
 import { computed, Injectable, Signal, signal } from '@angular/core';
-import { decode_save, encode_save } from '@coral/save-parser';
+import { decode_save, encode_save, inspect_save } from '@coral/save-parser';
+
+type SaveCompatibility = 'tested' | 'newerUntested' | 'olderUntested';
+
+export type SaveInspection = {
+  outerVersion: number;
+  compatibility: SaveCompatibility;
+  exportAllowed: boolean;
+  warning?: string;
+  compressedLen: number;
+  innerLen: number;
+  chunkCount: number;
+};
 
 @Injectable({
   providedIn: 'root',
@@ -7,6 +19,9 @@ import { decode_save, encode_save } from '@coral/save-parser';
 export class SaveGameService {
   readonly status = signal<'NOT_STARTED' | 'PROCESSING' | 'SUCCESS' | 'ERROR' | 'EXPORTING'>('NOT_STARTED');
   readonly decodedData = signal<undefined | null | Record<string, any>>(null);
+  readonly inspection = signal<SaveInspection | null>(null);
+  readonly errorMessage = signal<string | null>(null);
+  readonly canExport = computed(() => !!this.decodedData() && !!this.inspection()?.exportAllowed);
   readonly #rawData = signal<null | { name: string; content: ArrayBuffer }>(null);
 
   parseSaveGame(saveFile: File) {
@@ -14,20 +29,29 @@ export class SaveGameService {
     reader.addEventListener('loadend', (event) => {
       try {
         const target = event.target?.result as ArrayBuffer | undefined;
-        if (target) {
-          this.#rawData.set({ content: target, name: saveFile.name });
-          const binarySave = decode_save(target);
-          this.decodedData.set(binarySave);
-          this.status.set('SUCCESS');
-          console.log(binarySave.root.properties.SaveData_0.Struct.value.Struct);
+        if (!target) {
+          throw new Error('Unable to read save file.');
         }
+
+        const inspection = inspect_save(target) as SaveInspection;
+        const binarySave = decode_save(target);
+
+        this.#rawData.set({ content: target, name: saveFile.name });
+        this.inspection.set(inspection);
+        this.decodedData.set(binarySave);
+        this.errorMessage.set(null);
+        this.status.set('SUCCESS');
       } catch (e) {
         this.#rawData.set(null);
+        this.inspection.set(null);
+        this.decodedData.set(null);
+        this.errorMessage.set(e instanceof Error ? e.message : String(e));
         this.status.set('ERROR');
         console.error(e);
       }
     });
     this.status.set('PROCESSING');
+    this.errorMessage.set(null);
     reader.readAsArrayBuffer(saveFile);
   }
 
@@ -84,9 +108,21 @@ export class SaveGameService {
   save() {
     const rawData = this.#rawData();
 
-    if (rawData) {
+    if (!rawData || !this.canExport()) {
+      this.errorMessage.set('Export is disabled because this save has not passed compatibility validation.');
+      return;
+    }
+
+    try {
+      this.status.set('EXPORTING');
       const fileData = encode_save(rawData.content, this.decodedData());
       this.#downloadBlob(fileData, rawData.name, 'application/octet-stream');
+      this.status.set('SUCCESS');
+      this.errorMessage.set(null);
+    } catch (e) {
+      this.status.set('ERROR');
+      this.errorMessage.set(e instanceof Error ? e.message : String(e));
+      console.error(e);
     }
   }
 
