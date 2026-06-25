@@ -257,7 +257,8 @@ pub fn read_inner_save_bytes(outer_save: &Save) -> Result<Vec<u8>, String> {
         return Err("Decompressed inner save is shorter than its size prefix".to_string());
     }
 
-    Ok(decompressed_bytes.split_off(4))
+    decompressed_bytes.drain(..4);
+    Ok(decompressed_bytes)
 }
 
 pub fn decode_inner_save(inner_save_bytes: &[u8]) -> Result<Save, String> {
