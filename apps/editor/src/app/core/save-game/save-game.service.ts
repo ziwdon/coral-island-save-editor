@@ -1,5 +1,6 @@
 import { computed, Injectable, Signal, signal } from '@angular/core';
 import { decode_save, encode_save, inspect_save } from '@coral/save-parser';
+import { getExistingPathValue, setExistingPathValue } from './save-game-path';
 
 export type SaveCompatibility = 'tested' | 'newerUntested' | 'olderUntested';
 
@@ -111,6 +112,26 @@ export class SaveGameService {
       const data = this.decodedData();
       return path.split('.').reduce((a, b) => a?.[b], data);
     });
+  }
+
+  getValue(path: string): unknown {
+    return getExistingPathValue(this.decodedData(), path).value;
+  }
+
+  setExisting(path: string, value: unknown): boolean {
+    const data = this.decodedData();
+
+    if (!data) {
+      return false;
+    }
+
+    const updated = setExistingPathValue(data, path, value);
+
+    if (updated) {
+      this.decodedData.set(data);
+    }
+
+    return updated;
   }
 
   set(desc: string, value: any) {

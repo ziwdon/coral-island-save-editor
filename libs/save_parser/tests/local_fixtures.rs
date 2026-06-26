@@ -6,7 +6,11 @@ use save_parser::core::{
     decode_save_bytes, encode_save_bytes, inspect_save_bytes, read_outer_save,
     round_trip_save_bytes, CompatibilityLevel,
 };
+use serde_json::Value;
 use uesave::{PropertyInner, Save};
+
+const PLAYER_GOLD_JSON_PATH: &str =
+    "root.properties.SaveData_0.Struct.value.Struct.players_0.Array.value.Values[0].playerCurrentGold_0.Int";
 
 fn workspace_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -62,6 +66,46 @@ fn with_outer_version(raw_save: &[u8], version: i32) -> Vec<u8> {
         .write(&mut output)
         .expect("outer save should encode");
     output.into_inner()
+}
+
+fn split_json_segment(segment: &str) -> Option<(&str, Option<usize>)> {
+    let Some(start_index) = segment.find('[') else {
+        return Some((segment, None));
+    };
+
+    if !segment.ends_with(']') {
+        return None;
+    }
+
+    let key = &segment[..start_index];
+    let array_index = segment[start_index + 1..segment.len() - 1].parse().ok()?;
+    Some((key, Some(array_index)))
+}
+
+fn get_json_path<'a>(mut value: &'a Value, path: &str) -> Option<&'a Value> {
+    for segment in path.split('.') {
+        let (key, array_index) = split_json_segment(segment)?;
+        value = value.get(key)?;
+
+        if let Some(array_index) = array_index {
+            value = value.get(array_index)?;
+        }
+    }
+
+    Some(value)
+}
+
+fn get_json_path_mut<'a>(mut value: &'a mut Value, path: &str) -> Option<&'a mut Value> {
+    for segment in path.split('.') {
+        let (key, array_index) = split_json_segment(segment)?;
+        value = value.get_mut(key)?;
+
+        if let Some(array_index) = array_index {
+            value = value.get_mut(array_index)?;
+        }
+    }
+
+    Some(value)
 }
 
 #[test]
@@ -174,4 +218,57 @@ fn inspect_allows_newer_readable_fixture_after_round_trip_validation() {
         inspection.warning.is_some(),
         "newer untested saves should still warn"
     );
+}
+
+#[test]
+fn edits_player_gold_fixture_and_round_trips_when_present() {
+    let mut edited_any_fixture = false;
+
+    for name in ["v201.sav", "v208.sav", "v220.sav"] {
+        let Some(raw_save) = read_optional_fixture(name) else {
+            continue;
+        };
+
+        let inner_save = decode_save_bytes(&raw_save).unwrap_or_else(|error| {
+            panic!("{} should decode before primitive edit: {}", name, error)
+        });
+        let mut save_json =
+            serde_json::to_value(&inner_save).expect("decoded save should serialize to JSON");
+
+        let Some(gold_value) = get_json_path_mut(&mut save_json, PLAYER_GOLD_JSON_PATH) else {
+            println!("SKIP {name}: player gold path not found");
+            continue;
+        };
+        let Some(original_gold) = gold_value.as_i64() else {
+            println!("SKIP {name}: player gold path is not an integer");
+            continue;
+        };
+
+        let edited_gold = original_gold + 37;
+        *gold_value = Value::from(edited_gold);
+        edited_any_fixture = true;
+
+        let edited_save: Save =
+            serde_json::from_value(save_json).expect("edited save JSON should deserialize");
+        let encoded_save = encode_save_bytes(&raw_save, &edited_save).unwrap_or_else(|error| {
+            panic!("{} should encode after primitive edit: {}", name, error)
+        });
+        let encoded_inner_save = decode_save_bytes(&encoded_save).unwrap_or_else(|error| {
+            panic!("{} should decode after primitive edit: {}", name, error)
+        });
+        let encoded_json =
+            serde_json::to_value(&encoded_inner_save).expect("encoded save should serialize");
+        let actual_gold = get_json_path(&encoded_json, PLAYER_GOLD_JSON_PATH)
+            .and_then(Value::as_i64)
+            .unwrap_or_else(|| panic!("{} encoded player gold path should remain readable", name));
+
+        assert_eq!(
+            actual_gold, edited_gold,
+            "{name} player gold edit should survive"
+        );
+    }
+
+    if !edited_any_fixture {
+        println!("SKIP primitive edit round-trip test requires a fixture with player gold");
+    }
 }
