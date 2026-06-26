@@ -1,6 +1,7 @@
 @font-face {
   font-family: 'QTVagaRound';
-  src: url('/fonts/QTVagaRound-Bold.woff2') format('woff2'), url('/fonts/QTVagaRound-Bold.woff') format('woff');
+  src: url('../../../../apps/editor/public/fonts/QTVagaRound-Bold.woff2') format('woff2'),
+    url('../../../../apps/editor/public/fonts/QTVagaRound-Bold.woff') format('woff');
   font-weight: bold;
   font-style: normal;
   font-display: swap;
@@ -8,7 +9,8 @@
 
 @font-face {
   font-family: 'QTVagaRound';
-  src: url('/fonts/QTVagaRound.woff2') format('woff2'), url('/fonts/QTVagaRound.woff') format('woff');
+  src: url('../../../../apps/editor/public/fonts/QTVagaRound.woff2') format('woff2'),
+    url('../../../../apps/editor/public/fonts/QTVagaRound.woff') format('woff');
   font-weight: 500;
   font-style: normal;
   font-display: swap;

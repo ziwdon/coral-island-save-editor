@@ -12,6 +12,8 @@ import { SaveGameService } from '../core/save-game/save-game.service';
     '[class]': '"group"',
     '[class.is-dragging-over-body]': 'isDraggingOverBody()',
     '[class.is-dragging-over]': 'isDraggingOver()',
+    role: 'button',
+    tabindex: '0',
   },
 })
 export class FileHandlerComponent {
@@ -30,8 +32,21 @@ export class FileHandlerComponent {
   }
 
   @HostListener('click', ['$event'])
-  openFilePicker() {
-    this.input()?.nativeElement.click();
+  openFilePicker(event?: Event) {
+    const input = this.input()?.nativeElement as HTMLInputElement | undefined;
+
+    if (!input || event?.target === input) {
+      return;
+    }
+
+    input.click();
+  }
+
+  @HostListener('keydown.enter', ['$event'])
+  @HostListener('keydown.space', ['$event'])
+  onKeyboardOpen(event: KeyboardEvent) {
+    event.preventDefault();
+    this.openFilePicker();
   }
 
   @HostListener('drop', ['$event'])

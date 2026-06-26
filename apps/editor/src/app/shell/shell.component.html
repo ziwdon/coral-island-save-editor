@@ -1,50 +1,74 @@
-<aside class="editor-sidebar flex flex-col h-dvh overflow-x-hidden overflow-y-auto sticky top-0 w-[450px]">
-  <app-file-handler class="m-2" />
+<aside class="editor-sidebar">
+  <section class="sidebar-section">
+    <app-file-handler />
+    <p class="sidebar-note">Files are read with browser file APIs and kept in memory for this session.</p>
+  </section>
 
-  <span class="mx-2 mt-4" [attr.title]="!decodedData() ? 'Load a file to activate exporting' : null">
-    <button
-      class="border-white rounded-full disabled:opacity-30 border-2 text-white px-4 py-2 w-full hover:bg-white hover:text-black disabled:pointer-events-none font-bold"
-      [disabled]="!decodedData()"
-      (click)="save()"
-    >
-      export
-    </button>
-  </span>
+  <section class="export-section" [attr.title]="!canExport() ? 'Load a compatible save before exporting' : null">
+    <button class="export-button" [disabled]="!canExport()" (click)="save()" type="button">Export download</button>
+    <p>Downloads a new save file. The original Steam save is never overwritten automatically.</p>
+  </section>
 
-  @if (decodedData()) {
-  <hr class="m-4" />
-  <h2 class="text-white text-xl font-bold m-2">Configurations</h2>
-  <a
-    class="mx-2 rounded-3xl block p-4 bg-beige font-bold group"
-    routerLinkActive="!bg-active text-active-dark"
-    routerLink="world"
-    >World</a
-  >
-  <hr class="m-4" />
+  @if (inspection()?.warning) {
+  <ci-ui-card class="sidebar-card">
+    <h3 class="mb-2">Compatibility warning</h3>
+    <p>{{ inspection()?.warning }}</p>
+  </ci-ui-card>
+  } @if (errorMessage()) {
+  <ci-ui-card class="sidebar-card">
+    <h3 class="mb-2">Save error</h3>
+    <p>{{ errorMessage() }}</p>
+  </ci-ui-card>
+  } @if (decodedData()) {
+  <hr />
+  <nav class="config-nav" aria-label="Editor sections">
+    <h2>Editor</h2>
+    <a class="nav-link" routerLinkActive="!bg-active text-active-dark" routerLink="explorer">Explorer</a>
+    <a class="nav-link" routerLinkActive="!bg-active text-active-dark" routerLink="world">World</a>
+  </nav>
+  <hr />
   <app-players-list />
   }
 </aside>
-<main class="flex flex-col w-full min-h-dvh">
+<main class="editor-main">
   @let data = decodedData() ; @if (status() === 'NOT_STARTED') {
-  <ci-ui-card class="m-8">
-    <h3 class="mb-2">Welcome to coral island save game editor!</h3>
-    <p>Select a file at the top left corner to start editing your save game.</p>
-    <p>
-      Steam save games can be found at the following location (windows): %LOCALAPPDATA%\ProjectCoral\Saved\SaveGames
-    </p>
-  </ci-ui-card>
+  <section class="welcome-page">
+    <ci-ui-card class="welcome-card">
+      <h1>Coral Island save editor</h1>
+      <p class="lede">Open a local save, inspect or edit supported fields, then export a downloaded copy.</p>
+      <ol class="workflow-list">
+        <li>Open a save file from your device.</li>
+        <li>Review compatible fields in Explorer or the focused editor views.</li>
+        <li>Export a new save file when you are ready to test it.</li>
+      </ol>
+      <p class="privacy-callout">
+        Save files stay in your browser. Nothing is uploaded, persisted, or written back automatically.
+      </p>
+      <p class="save-location">
+        Steam save games are commonly in
+        <code>%LOCALAPPDATA%\ProjectCoral\Saved\SaveGames</code>
+        on Windows.
+      </p>
+    </ci-ui-card>
+  </section>
   } @else if (status() === 'EXPORTING' || status() === 'SUCCESS' || (status() === 'PROCESSING' && !!data)) {
   <router-outlet />
   } @else if (status() === 'PROCESSING' && !data) {
-  <ci-ui-card class="m-8">
-    <h3 class="mb-2">Processing</h3>
-    <p>Processing, this may take some minutes.</p>
-  </ci-ui-card>
+  <section class="message-page">
+    <ci-ui-card>
+      <h1>Reading save file</h1>
+      <p>Parsing happens locally in this browser tab. Larger saves can take a little while.</p>
+    </ci-ui-card>
+  </section>
   } @else if (status() === 'ERROR') {
-  <ci-ui-card class="m-8">
-    <h3 class="mb-2">Error</h3>
-    <p>There was an error loading your save game. Please try again.</p>
-  </ci-ui-card>
-
+  <section class="message-page">
+    <ci-ui-card>
+      <h1>Could not load save</h1>
+      <p>The editor did not export anything. Choose another file or keep your original backup.</p>
+      @if (errorMessage()) {
+      <p class="error-detail">{{ errorMessage() }}</p>
+      }
+    </ci-ui-card>
+  </section>
   }
 </main>

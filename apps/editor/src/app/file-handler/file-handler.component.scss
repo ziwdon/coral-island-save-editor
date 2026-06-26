@@ -1,10 +1,14 @@
 :host {
   cursor: pointer;
+  display: grid;
+  min-height: 10rem;
+  place-items: center;
   padding: theme('spacing.4');
-
-  background: rgb(255 255 255 / 0.3);
-
-  border: 2px solid rgb(255 255 255 / 0.3);
+  border: 2px solid rgb(255 255 255 / 0.32);
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 0.12);
+  outline: none;
+  transition: background 120ms ease, border-color 120ms ease;
 
   &.is-dragging-over-body {
     border-style: dashed;
@@ -12,5 +16,35 @@
 
   &.is-dragging-over {
     border-color: white;
+    background: rgb(255 255 255 / 0.2);
   }
+
+  &:focus-visible {
+    border-color: #f5d38b;
+    box-shadow: 0 0 0 3px rgb(245 211 139 / 0.25);
+  }
+}
+
+.drop-zone-content {
+  display: grid;
+  gap: 0.35rem;
+  max-width: 22rem;
+  color: white;
+  text-align: center;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+p {
+  margin: 0;
+  line-height: 1.35;
+}
+
+.privacy-note {
+  color: rgb(255 255 255 / 0.78);
+  font-size: 0.95rem;
 }

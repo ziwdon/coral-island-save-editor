@@ -12,7 +12,7 @@ body {
 }
 
 body {
-  background: linear-gradient(#0009, #0009) fixed, url(/bg.jpg) center no-repeat fixed;
+  background: linear-gradient(#0009, #0009) fixed, url('../public/bg.jpg') center no-repeat fixed;
   background-size: cover, cover;
   color: #5a4627;
   font-family: 'QTVagaRound', sans-serif;
