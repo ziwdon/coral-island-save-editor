@@ -2,6 +2,7 @@ import { Component, computed, input } from '@angular/core';
 import { PlayerInfoComponent } from './player-info/player-info.component';
 import { SaveGameValuePipe } from '../../core/save-game/save-game-value.pipe';
 import { CardComponent } from '@coral-island/ui';
+import { playerStructPath } from '../../core/save-game/coral-island-save-paths';
 
 @Component({
   selector: 'app-player',
@@ -12,6 +13,5 @@ import { CardComponent } from '@coral-island/ui';
 })
 export class PlayerComponent {
   index = input.required();
-  #PLAYERS_ARRAY_PATH = 'root.properties.SaveData_0.Struct.value.Struct.players_0.Array.value.Struct.value';
-  playerPath = computed(() => this.#PLAYERS_ARRAY_PATH + '.' + this.index() + '.Struct');
+  playerPath = computed(() => playerStructPath(String(this.index())));
 }

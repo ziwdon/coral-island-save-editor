@@ -20,17 +20,20 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "libs/save_parser",
-        "commands": [
-          "wasm-pack build --target bundler --out-dir ../../dist/save-parser-web --out-name save-parser"
-        ],
+        "commands": ["wasm-pack build --target bundler --out-dir ../../dist/save-parser-web --out-name save-parser"],
         "parallel": false
       },
       "configurations": {
         "node": {
-          "commands": [
-            "wasm-pack build --target nodejs --out-dir ../../dist/save-parser-node --out-name save-parser"
-          ]
+          "commands": ["wasm-pack build --target nodejs --out-dir ../../dist/save-parser-node --out-name save-parser"]
         }
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": ["cargo test -p save_parser -- --nocapture"],
+        "parallel": false
       }
     },
     "lint": {

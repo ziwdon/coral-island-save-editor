@@ -1,0 +1,130 @@
+<section class="explorer-page p-8">
+  <h2 class="text-white text-3xl mb-5">Save explorer</h2>
+
+  <ci-ui-card class="block mb-4">
+    <h3 class="mb-2">Generic editing warning</h3>
+    <p>
+      This view edits decoded save fields directly. Some valid-looking values can still make a save unusable. Keep a
+      backup of the original save and export only when you are ready to test the downloaded copy.
+    </p>
+  </ci-ui-card>
+
+  <div class="explorer-layout">
+    <section class="explorer-panel min-w-0 border border-white/20 bg-black/70 text-white p-4">
+      <label class="search-field">
+        <span>Search by key, path, or value</span>
+        <input
+          [formControl]="searchControl"
+          autocomplete="off"
+          placeholder="quest, gold, player, EC_..."
+          type="search"
+        />
+      </label>
+
+      @if (searchQuery()) {
+      <p class="panel-note">Showing up to {{ searchRenderLimit }} matches.</p>
+      } @else {
+      <p class="panel-note">
+        Expand containers to inspect fields. Each expanded container shows up to {{ childRenderLimit }} children.
+      </p>
+      }
+
+      <div class="node-list" role="tree">
+        @for (node of visibleNodes(); track node.path) {
+        <button
+          class="node-row"
+          [class.selected]="selectedPath() === node.path"
+          [style.--node-indent.px]="node.depth * 16"
+          (click)="selectNode(node)"
+          type="button"
+        >
+          <span class="indent"></span>
+          <span
+            class="toggle"
+            [class.invisible]="!canExpand(node)"
+            (click)="toggleNode(node, $event)"
+            aria-hidden="true"
+            >{{ isExpanded(node) ? 'v' : '>' }}</span
+          >
+          <span class="kind">{{ node.kind }}</span>
+          <span class="node-key">{{ node.label }}</span>
+          <code class="node-path">{{ node.path }}</code>
+          <span class="node-value">{{ node.displayValue }}</span>
+        </button>
+        } @empty {
+        <p class="empty-state">No decoded save fields match the current view.</p>
+        }
+      </div>
+    </section>
+
+    <section class="editor-panel min-w-0 border border-white/20 bg-black/70 text-white p-4">
+      @let selected = selectedNode(); @if (selected) {
+      <div class="selected-header">
+        <span class="kind">{{ selected.kind }}</span>
+        <h3>{{ selected.label }}</h3>
+      </div>
+
+      <dl class="field-details">
+        <dt>Full path</dt>
+        <dd>
+          <code>{{ selected.path }}</code>
+        </dd>
+        <dt>Current value</dt>
+        <dd>{{ selected.displayValue }}</dd>
+        <dt>Children</dt>
+        <dd>{{ selected.childCount }}</dd>
+      </dl>
+
+      @if (selected.edit) {
+      <form class="edit-form" (ngSubmit)="applyEdit()">
+        @switch (selected.edit.kind) { @case ('boolean') {
+        <label class="checkbox-field">
+          <input
+            type="checkbox"
+            [checked]="editDraft() === 'true'"
+            (change)="editDraft.set($any($event.target).checked ? 'true' : 'false')"
+          />
+          <span>Enabled</span>
+        </label>
+        } @case ('enum') {
+        <label class="edit-field">
+          <span>Enum value</span>
+          <select [value]="editDraft()" (change)="editDraft.set($any($event.target).value)">
+            @for (option of enumOptions(selected); track option) {
+            <option [value]="option">{{ option }}</option>
+            }
+          </select>
+        </label>
+        } @case ('number') {
+        <label class="edit-field">
+          <span>Number</span>
+          <input type="number" [value]="editDraft()" (input)="editDraft.set($any($event.target).value)" />
+        </label>
+        } @default {
+        <label class="edit-field">
+          <span>Text</span>
+          <input type="text" [value]="editDraft()" (input)="editDraft.set($any($event.target).value)" />
+        </label>
+        } }
+
+        <button
+          class="w-fit border-2 border-white text-white px-4 py-2 font-extrabold hover:bg-white hover:text-black"
+          type="submit"
+        >
+          Apply edit
+        </button>
+      </form>
+      } @else {
+      <p class="read-only-note">
+        This node is inspect-only. Containers and unknown wrapper shapes are not editable here.
+      </p>
+      } @if (editError()) {
+      <p class="edit-error">{{ editError() }}</p>
+      } @if (editMessage()) {
+      <p class="edit-message">{{ editMessage() }}</p>
+      } } @else {
+      <p class="empty-state">Select a field to inspect its full path and edit status.</p>
+      }
+    </section>
+  </div>
+</section>

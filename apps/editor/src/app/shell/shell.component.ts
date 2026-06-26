@@ -18,6 +18,9 @@ export class ShellComponent {
   #saveGameService = inject(SaveGameService);
   status = this.#saveGameService.status;
   decodedData = this.#saveGameService.decodedData;
+  inspection = this.#saveGameService.inspection;
+  canExport = this.#saveGameService.canExport;
+  errorMessage = this.#saveGameService.errorMessage;
 
   #coralIslandSaveGameService = inject(CoralIslandSaveGameService);
 

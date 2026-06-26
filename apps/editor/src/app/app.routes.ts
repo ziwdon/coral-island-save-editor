@@ -8,4 +8,5 @@ export const appRoutes: Route[] = [
     loadChildren: () =>
       import('./coral-island-editor/coral-island-editor.routes').then((m) => m.CORAL_ISLAND_EDITOR_ROUTES),
   },
+  { path: '**', redirectTo: 'editor' },
 ];

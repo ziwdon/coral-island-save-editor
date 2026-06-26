@@ -1,0 +1,150 @@
+.explorer-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(20rem, 0.8fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.search-field,
+.edit-field,
+.checkbox-field {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+
+.search-field input,
+.edit-field input,
+.edit-field select {
+  width: 100%;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  background: rgb(255 255 255 / 0.95);
+  color: black;
+  padding: 0.65rem;
+}
+
+.panel-note,
+.read-only-note,
+.empty-state {
+  margin-block: 0.75rem;
+  color: rgb(255 255 255 / 0.78);
+}
+
+.node-list {
+  display: grid;
+  gap: 0.35rem;
+  max-height: calc(100dvh - 17rem);
+  overflow: auto;
+  padding-right: 0.25rem;
+}
+
+.node-row {
+  display: grid;
+  grid-template-columns: var(--node-indent) 1.2rem minmax(4.2rem, 0.3fr) minmax(8rem, 0.55fr) minmax(12rem, 1fr) minmax(
+      5rem,
+      0.45fr
+    );
+  gap: 0.5rem;
+  align-items: start;
+  width: 100%;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background: rgb(255 255 255 / 0.08);
+  color: white;
+  padding: 0.55rem;
+  text-align: left;
+}
+
+.node-row:hover,
+.node-row.selected {
+  border-color: white;
+  background: rgb(255 255 255 / 0.16);
+}
+
+.toggle {
+  font-family: monospace;
+  font-weight: 700;
+}
+
+.invisible {
+  visibility: hidden;
+}
+
+.kind {
+  color: #111;
+  background: #f5d38b;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.node-key,
+.node-path,
+.node-value,
+.field-details dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.node-path,
+.field-details code {
+  font-size: 0.78rem;
+}
+
+.selected-header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.selected-header h3 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.field-details {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.field-details dt {
+  color: rgb(255 255 255 / 0.7);
+  font-weight: 700;
+}
+
+.edit-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.edit-error {
+  margin-top: 0.75rem;
+  color: #ffb8b8;
+  font-weight: 700;
+}
+
+.edit-message {
+  margin-top: 0.75rem;
+  color: #c9f7c2;
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .explorer-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .node-row {
+    grid-template-columns: var(--node-indent) 1.2rem minmax(4rem, 0.3fr) minmax(7rem, 0.5fr);
+  }
+
+  .node-path,
+  .node-value {
+    grid-column: 3 / -1;
+  }
+}

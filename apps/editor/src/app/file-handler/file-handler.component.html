@@ -1,2 +1,12 @@
-<input type="file" #input class="sr-only" (change)="parseSaveGame($event)" />
-<p class="text-center text-white">Drop or select your save game here</p>
+<input
+  type="file"
+  #input
+  class="sr-only"
+  accept=".sav,.savdata,.bin,application/octet-stream"
+  (change)="parseSaveGame($event)"
+/>
+<div class="drop-zone-content">
+  <h2>Open save file</h2>
+  <p>Drop a Coral Island save here, or select one from this device.</p>
+  <p class="privacy-note">Save files stay in your browser. Nothing is uploaded.</p>
+</div>
