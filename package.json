@@ -9,7 +9,7 @@
     "commit": "git-cz",
     "prepare": "husky",
     "test-build-editor-pages-script": "node tools/pages/build-editor-pages.test.mjs",
-    "test-editor-explorer": "ts-node --transpile-only --compiler-options '{\"module\":\"commonjs\"}' apps/editor/src/app/coral-island-editor/explorer/save-explorer.model.test.ts",
+    "test-editor-explorer": "ts-node --project apps/editor/tsconfig.editor.json -r tsconfig-paths/register --transpile-only --compiler-options '{\"module\":\"commonjs\"}' apps/editor/src/app/coral-island-editor/explorer/save-explorer.model.test.ts",
     "test-save-parser": "nx run save_parser:test"
   },
   "private": true,

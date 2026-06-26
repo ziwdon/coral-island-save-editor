@@ -12,7 +12,28 @@ export type SetExistingPathValueOptions = {
   enumTypes?: ReadonlySet<string>;
 };
 
+export type NumericPathValueOptions = {
+  integer?: boolean;
+  min?: number;
+  max?: number;
+};
+
 const ARRAY_SEGMENT_PATTERN = /^(.+)\[(\d+)]$/;
+const NUMERIC_PATH_VALUE_OPTIONS: Record<string, NumericPathValueOptions> = {
+  Byte: { integer: true, min: 0, max: 255 },
+  Int: { integer: true, min: -2_147_483_648, max: 2_147_483_647 },
+  Int16: { integer: true, min: -32_768, max: 32_767 },
+  Int32: { integer: true, min: -2_147_483_648, max: 2_147_483_647 },
+  Int64: { integer: true, min: Number.MIN_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER },
+  UInt: { integer: true, min: 0, max: 4_294_967_295 },
+  UInt16: { integer: true, min: 0, max: 65_535 },
+  UInt32: { integer: true, min: 0, max: 4_294_967_295 },
+  UInt64: { integer: true, min: 0, max: Number.MAX_SAFE_INTEGER },
+};
+
+export function getNumericPathValueOptions(key: string): NumericPathValueOptions {
+  return NUMERIC_PATH_VALUE_OPTIONS[key] ?? {};
+}
 
 export function parseExplorerPath(path: string): ExplorerPathSegment[] {
   if (path === '') {
@@ -68,6 +89,21 @@ export function setExistingPathValue(
   value: unknown,
   options: SetExistingPathValueOptions = {},
 ): boolean {
+  return setExistingPathValueWithGuard(data, path, value, (currentValue, nextValue, leaf) =>
+    isSafeReplacement(currentValue, nextValue, leaf, options),
+  );
+}
+
+export function setExistingPathValueUnchecked(data: unknown, path: string, value: unknown): boolean {
+  return setExistingPathValueWithGuard(data, path, value, () => true);
+}
+
+function setExistingPathValueWithGuard(
+  data: unknown,
+  path: string,
+  value: unknown,
+  canReplace: (currentValue: unknown, nextValue: unknown, leaf: ExplorerPathSegment) => boolean,
+): boolean {
   const segments = parseExplorerPath(path);
   const leaf = segments.pop();
 
@@ -89,7 +125,7 @@ export function setExistingPathValue(
       return false;
     }
 
-    if (!isSafeReplacement(arrayValue[leaf.index], value, leaf, options)) {
+    if (!canReplace(arrayValue[leaf.index], value, leaf)) {
       return false;
     }
 
@@ -97,7 +133,7 @@ export function setExistingPathValue(
     return true;
   }
 
-  if (!isSafeReplacement(parent.value[leaf.key], value, leaf, options)) {
+  if (!canReplace(parent.value[leaf.key], value, leaf)) {
     return false;
   }
 
@@ -134,7 +170,7 @@ function isSafeReplacement(
       return false;
     }
 
-    return !requiresIntegerValue(leaf.key) || Number.isInteger(nextValue);
+    return isSafeNumericReplacement(leaf.key, nextValue);
   }
 
   if (typeof currentValue === 'boolean') {
@@ -151,7 +187,7 @@ function isSafeReplacement(
   return (
     currentEnum.enumType === nextEnum.enumType &&
     options.enumTypes?.has(currentEnum.enumType) === true &&
-    nextEnum.value.startsWith(`${currentEnum.enumType}::`)
+    (nextEnum.value === currentEnum.value || nextEnum.value.startsWith(`${currentEnum.enumType}::`))
   );
 }
 
@@ -173,6 +209,20 @@ function readEnumWrapper(value: unknown) {
   };
 }
 
-function requiresIntegerValue(key: string): boolean {
-  return ['Byte', 'Int', 'Int16', 'Int32', 'Int64', 'UInt', 'UInt16', 'UInt32', 'UInt64'].includes(key);
+function isSafeNumericReplacement(key: string, value: number): boolean {
+  const options = getNumericPathValueOptions(key);
+
+  if (options.integer && !Number.isInteger(value)) {
+    return false;
+  }
+
+  if (options.min !== undefined && value < options.min) {
+    return false;
+  }
+
+  if (options.max !== undefined && value > options.max) {
+    return false;
+  }
+
+  return true;
 }

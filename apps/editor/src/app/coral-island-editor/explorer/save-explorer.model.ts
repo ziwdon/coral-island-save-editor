@@ -1,7 +1,13 @@
-import { getExistingPathValue, parseExplorerPath, setExistingPathValue } from '../../core/save-game/save-game-path';
+import {
+  getExistingPathValue,
+  getNumericPathValueOptions,
+  parseExplorerPath,
+  setExistingPathValue,
+} from '../../core/save-game/save-game-path';
 
 export {
   getExistingPathValue,
+  getNumericPathValueOptions,
   parseExplorerPath,
   setExistingPathValue,
   type ExistingPathResult,
@@ -41,7 +47,7 @@ export type ExplorerOptions = {
 };
 
 const DEFAULT_SEARCH_LIMIT = 100;
-const DEFAULT_VISIT_LIMIT = 5000;
+const DEFAULT_VISIT_LIMIT = 40000;
 
 export function listExplorerChildren(
   value: unknown,
@@ -125,10 +131,11 @@ export function searchExplorerNodes(root: unknown, query: string, options: Explo
     limit: visitLimit,
   };
   const queue = listExplorerChildren(root, '', -1, childOptions);
+  let queueIndex = 0;
   let visited = 0;
 
-  while (queue.length > 0 && results.length < limit && visited < visitLimit) {
-    const node = queue.shift()!;
+  while (queueIndex < queue.length && results.length < limit && visited < visitLimit) {
+    const node = queue[queueIndex++];
     visited++;
 
     if (nodeMatches(node, normalizedQuery)) {
@@ -149,6 +156,8 @@ export function searchExplorerNodes(root: unknown, query: string, options: Explo
 
 export type PrimitiveEditOptions = {
   integer?: boolean;
+  min?: number;
+  max?: number;
 };
 
 export function coercePrimitiveEditValue(
@@ -187,14 +196,29 @@ export function coercePrimitiveEditValue(
     throw new Error('Enter a whole number.');
   }
 
+  if (options.min !== undefined && options.max !== undefined && (value < options.min || value > options.max)) {
+    throw new Error(`Enter a number between ${options.min} and ${options.max}.`);
+  }
+
+  if (options.min !== undefined && value < options.min) {
+    throw new Error(`Enter a number greater than or equal to ${options.min}.`);
+  }
+
+  if (options.max !== undefined && value > options.max) {
+    throw new Error(`Enter a number less than or equal to ${options.max}.`);
+  }
+
   return value;
 }
 
-export function buildEnumEditValue(enumType: string, value: string) {
+export function buildEnumEditValue(enumType: string, value: string, currentValue?: string) {
+  const enumValue =
+    value === currentValue ? value : value.startsWith(`${enumType}::`) ? value : `${enumType}::${value}`;
+
   return {
     Enum: {
       enum_type: enumType,
-      value: value.startsWith(`${enumType}::`) ? value : `${enumType}::${value}`,
+      value: enumValue,
     },
   };
 }

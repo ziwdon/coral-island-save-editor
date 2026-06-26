@@ -4,6 +4,7 @@ import { PrimitiveFormPartComponent } from '../../form-parts/primitive-form-part
 import { SaveGameValuePipe } from '../../core/save-game/save-game-value.pipe';
 import { MoneyComponent } from '@coral-island/ui';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { PLAYERS_ARRAY_PATH } from '../../core/save-game/coral-island-save-paths';
 
 @Component({
   selector: 'app-players-list',
@@ -12,7 +13,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   templateUrl: './players-list.component.html',
 })
 export class PlayersListComponent {
-  protected PLAYERS_ARRAY_PATH = 'root.properties.SaveData_0.Struct.value.Struct.players_0.Array.value.Struct.value';
+  protected readonly PLAYERS_ARRAY_PATH = PLAYERS_ARRAY_PATH;
   #saveGameService = inject(SaveGameService);
 
   players = this.#saveGameService.get(this.PLAYERS_ARRAY_PATH) as Signal<any[]>;

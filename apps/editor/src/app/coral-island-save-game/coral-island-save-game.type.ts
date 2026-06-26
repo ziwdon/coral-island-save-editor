@@ -5,7 +5,7 @@
 export type CoralIslandSaveGame = {
   root: {
     properties: {
-      SaveData_0: {
+      saveData_0: {
         Struct: {
           value: {
             Struct: {

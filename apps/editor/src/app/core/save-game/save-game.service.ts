@@ -1,7 +1,8 @@
 import { computed, Injectable, Signal, signal } from '@angular/core';
 import { CORAL_ISLAND_ENUMS } from '@coral-island/enums';
 import { decode_save, encode_save, inspect_save } from '@coral/save-parser';
-import { getExistingPathValue, setExistingPathValue } from './save-game-path';
+import { getExistingPathValue, setExistingPathValue, setExistingPathValueUnchecked } from './save-game-path';
+import { CURRENT_DATE_PATH } from './coral-island-save-paths';
 
 export type SaveCompatibility = 'tested' | 'newerUntested' | 'olderUntested';
 
@@ -139,46 +140,29 @@ export class SaveGameService {
   }
 
   set(desc: string, value: any) {
-    let obj = this.decodedData();
-    let arr = desc ? desc.split('.') : [];
+    const data = this.decodedData();
 
-    while (arr.length && obj) {
-      let comp = arr.shift()!;
-      let match = new RegExp('(.+)\\[([0-9]*)\\]').exec(comp);
-
-      // handle arrays
-      if (match !== null && match.length == 3) {
-        let arrayData = {
-          arrName: match[1],
-          arrIndex: match[2],
-        };
-        if (obj[arrayData.arrName] !== undefined) {
-          if (typeof value !== 'undefined' && arr.length === 0) {
-            obj[arrayData.arrName][arrayData.arrIndex] = value;
-          }
-          obj = obj[arrayData.arrName][arrayData.arrIndex];
-        } else {
-          obj = undefined;
-        }
-
-        continue;
-      }
-
-      // handle regular things
-      if (typeof value !== 'undefined') {
-        if (obj[comp] === undefined) {
-          obj[comp] = {};
-        }
-
-        if (arr.length === 0) {
-          obj[comp] = value;
-        }
-      }
-
-      obj = obj[comp];
+    if (!data) {
+      return undefined;
     }
 
-    return obj;
+    if (typeof value === 'undefined') {
+      return getExistingPathValue(data, desc).value;
+    }
+
+    const updated =
+      desc === CURRENT_DATE_PATH
+        ? setExistingPathValueUnchecked(data, desc, value)
+        : setExistingPathValue(data, desc, value, {
+            enumTypes: KNOWN_ENUM_TYPES,
+          });
+
+    if (!updated) {
+      return undefined;
+    }
+
+    this.decodedData.set({ ...data });
+    return value;
   }
 
   save() {

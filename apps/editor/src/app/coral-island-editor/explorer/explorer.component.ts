@@ -10,6 +10,7 @@ import {
   coercePrimitiveEditValue,
   describeExplorerNode,
   getExistingPathValue,
+  getNumericPathValueOptions,
   listExplorerChildren,
   parseExplorerPath,
   SaveExplorerNode,
@@ -19,7 +20,7 @@ import {
 const ROOT_RENDER_LIMIT = 100;
 const CHILD_RENDER_LIMIT = 200;
 const SEARCH_RENDER_LIMIT = 100;
-const SEARCH_VISIT_LIMIT = 8000;
+const SEARCH_VISIT_LIMIT = 40000;
 
 @Component({
   selector: 'app-explorer',
@@ -160,10 +161,8 @@ export class ExplorerComponent {
     try {
       const nextValue =
         node.edit.kind === 'enum'
-          ? buildEnumEditValue(node.edit.enumType, this.editDraft())
-          : coercePrimitiveEditValue(node.edit.kind, this.editDraft(), {
-              integer: this.#requiresInteger(node),
-            });
+          ? buildEnumEditValue(node.edit.enumType, this.editDraft(), node.edit.currentValue)
+          : coercePrimitiveEditValue(node.edit.kind, this.editDraft(), getNumericPathValueOptions(node.key));
 
       if (!this.saveGameService.setExisting(node.path, nextValue)) {
         this.editMessage.set(null);
@@ -220,9 +219,5 @@ export class ExplorerComponent {
 
   #pathDepth(path: string): number {
     return Math.max(parseExplorerPath(path).length - 1, 0);
-  }
-
-  #requiresInteger(node: SaveExplorerNode): boolean {
-    return ['Byte', 'Int', 'Int16', 'Int32', 'Int64', 'UInt', 'UInt16', 'UInt32', 'UInt64'].includes(node.key);
   }
 }
