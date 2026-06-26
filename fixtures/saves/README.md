@@ -9,7 +9,7 @@ For parser tests and diagnostics, do not edit files in the Steam save directory.
 Typical Proton/Steam source path:
 
 ```text
-/home/ziwdon/.steam/debian-installation/steamapps/compatdata/1158160/pfx/drive_c/users/steamuser/AppData/Local/ProjectCoral/Saved/SaveGames/
+/home/<user>/.steam/debian-installation/steamapps/compatdata/1158160/pfx/drive_c/users/steamuser/AppData/Local/ProjectCoral/Saved/SaveGames/
 ```
 
 Expected local fixture names:
@@ -23,9 +23,9 @@ fixtures/saves/v220.sav
 Suggested copy commands:
 
 ```bash
-cp /home/ziwdon/.steam/debian-installation/steamapps/compatdata/1158160/pfx/drive_c/users/steamuser/AppData/Local/ProjectCoral/Saved/SaveGames/OldVersion/DailySave_0_v201.sav fixtures/saves/v201.sav
-cp /home/ziwdon/.steam/debian-installation/steamapps/compatdata/1158160/pfx/drive_c/users/steamuser/AppData/Local/ProjectCoral/Saved/SaveGames/World_0/VersionUpgradeBackups/VersionBackupSave_v208.sav fixtures/saves/v208.sav
-cp /home/ziwdon/.steam/debian-installation/steamapps/compatdata/1158160/pfx/drive_c/users/steamuser/AppData/Local/ProjectCoral/Saved/SaveGames/World_0/ManualSave0.sav fixtures/saves/v220.sav
+cp /home/<user>/.steam/debian-installation/steamapps/compatdata/1158160/pfx/drive_c/users/steamuser/AppData/Local/ProjectCoral/Saved/SaveGames/OldVersion/DailySave_0_v201.sav fixtures/saves/v201.sav
+cp /home/<user>/.steam/debian-installation/steamapps/compatdata/1158160/pfx/drive_c/users/steamuser/AppData/Local/ProjectCoral/Saved/SaveGames/World_0/VersionUpgradeBackups/VersionBackupSave_v208.sav fixtures/saves/v208.sav
+cp /home/<user>/.steam/debian-installation/steamapps/compatdata/1158160/pfx/drive_c/users/steamuser/AppData/Local/ProjectCoral/Saved/SaveGames/World_0/ManualSave0.sav fixtures/saves/v220.sav
 ```
 
 .sav files and manifest.local.json are gitignored.
