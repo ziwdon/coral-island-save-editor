@@ -46,11 +46,11 @@ Thumbs.db
 # Local isolated worktrees
 .worktrees/
 
+# Local planning notes and continuation prompts.
+/docs/
+
 # Local Coral Island save fixtures copied from a user's machine.
 # These files contain private save data and must never be committed.
 /fixtures/saves/*.sav
 /fixtures/saves/*.sav.json
 /fixtures/saves/manifest.local.json
-
-# Local continuation prompts.
-/docs/save-explorer-feature-prompt.md

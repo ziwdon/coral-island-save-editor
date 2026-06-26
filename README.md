@@ -68,7 +68,7 @@ Build the static GitHub Pages artifact:
 npm run build-editor-pages
 ```
 
-See [GitHub Pages Deployment](docs/github-pages-deployment.md) for deployment details.
+The Pages build output is `dist/apps/editor/browser`. Configure GitHub Pages to deploy from GitHub Actions.
 
 ## Fork And AI Disclosure
 
@@ -78,4 +78,4 @@ AI-assisted development tools were used to help inspect the codebase, draft chan
 
 ## Fixture Saves
 
-Local save fixtures may be copied into `fixtures/saves` for parser testing, but actual save files in that directory are ignored by git and should not be committed.
+Local save fixtures may be copied manually into `fixtures/saves` for parser testing, but actual save files in that directory are ignored by git and should not be committed.
