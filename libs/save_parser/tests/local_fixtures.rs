@@ -1,11 +1,12 @@
 use std::fs;
+use std::io::Cursor;
 use std::path::PathBuf;
 
 use save_parser::core::{
-    decode_save_bytes, encode_save_bytes, inspect_save_bytes, round_trip_save_bytes,
-    CompatibilityLevel,
+    decode_save_bytes, encode_save_bytes, inspect_save_bytes, read_outer_save,
+    round_trip_save_bytes, CompatibilityLevel,
 };
-use uesave::Save;
+use uesave::{PropertyInner, Save};
 
 fn workspace_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -26,9 +27,10 @@ fn read_optional_fixture(name: &str) -> Option<Vec<u8>> {
         return None;
     }
 
-    Some(fs::read(&path).unwrap_or_else(|error| {
-        panic!("failed to read fixture {}: {error}", path.display())
-    }))
+    Some(
+        fs::read(&path)
+            .unwrap_or_else(|error| panic!("failed to read fixture {}: {error}", path.display())),
+    )
 }
 
 fn assert_save_data_exists(save: &Save) {
@@ -42,6 +44,24 @@ fn assert_save_data_exists(save: &Save) {
         "saveData property should exist; found keys: {:?}",
         keys
     );
+}
+
+fn with_outer_version(raw_save: &[u8], version: i32) -> Vec<u8> {
+    let mut outer_save = read_outer_save(raw_save).expect("outer save should parse");
+    let property = outer_save
+        .root
+        .properties
+        .0
+        .iter_mut()
+        .find_map(|(key, property)| (key.1 == "Version").then_some(property))
+        .expect("Version property should exist");
+    property.inner = PropertyInner::Int(version);
+
+    let mut output = Cursor::new(Vec::new());
+    outer_save
+        .write(&mut output)
+        .expect("outer save should encode");
+    output.into_inner()
 }
 
 #[test]
@@ -132,4 +152,26 @@ fn round_trips_known_fixtures_without_edits_when_present() {
         );
         assert_save_data_exists(&encoded_inner_save);
     }
+}
+
+#[test]
+fn inspect_allows_newer_readable_fixture_after_round_trip_validation() {
+    let Some(raw_save) = read_optional_fixture("v220.sav") else {
+        return;
+    };
+    let newer_save = with_outer_version(&raw_save, 221);
+
+    let inspection = inspect_save_bytes(&newer_save)
+        .expect("newer fixture should inspect after only outer version changes");
+
+    assert_eq!(inspection.outer_version, 221);
+    assert_eq!(inspection.compatibility, CompatibilityLevel::NewerUntested);
+    assert!(
+        inspection.export_allowed,
+        "newer readable saves that round-trip should be exportable with a warning"
+    );
+    assert!(
+        inspection.warning.is_some(),
+        "newer untested saves should still warn"
+    );
 }

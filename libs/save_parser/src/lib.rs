@@ -25,15 +25,7 @@ pub fn inspect_save(raw_save: ArrayBuffer) -> Result<JsValue, String> {
     console::log_2(&"save_parser ".into(), &String::from(VERSION).into());
 
     let raw_save_content = array_buffer_to_vec(&raw_save);
-    let mut inspection = core::inspect_save_bytes(&raw_save_content)?;
-
-    if matches!(
-        inspection.compatibility,
-        core::CompatibilityLevel::NewerUntested
-    ) && core::round_trip_save_bytes(&raw_save_content).is_ok()
-    {
-        inspection.export_allowed = true;
-    }
+    let inspection = core::inspect_save_bytes(&raw_save_content)?;
 
     JsValue::from_serde(&inspection).map_err(|error| error.to_string())
 }

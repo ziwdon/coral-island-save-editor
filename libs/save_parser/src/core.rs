@@ -286,13 +286,26 @@ pub fn decode_save_bytes(raw_save: &[u8]) -> Result<Save, String> {
 }
 
 pub fn inspect_save_bytes(raw_save: &[u8]) -> Result<SaveInspection, String> {
+    inspect_save_bytes_with_options(raw_save, true)
+}
+
+fn inspect_save_bytes_with_options(
+    raw_save: &[u8],
+    validate_newer_export: bool,
+) -> Result<SaveInspection, String> {
     let outer_save = read_outer_save(raw_save)?;
     let outer_version = read_outer_version(&outer_save)?;
     let compressed_bytes = read_compressed_save_data(&outer_save)?;
     let decompressed_bytes = decompress_save_data(compressed_bytes)?;
     let inner_save_bytes = inner_save_payload_bytes(&decompressed_bytes)?;
     let compatibility = compatibility_for_version(outer_version);
-    let export_allowed = matches!(compatibility, CompatibilityLevel::Tested);
+    let export_allowed = match compatibility {
+        CompatibilityLevel::Tested => true,
+        CompatibilityLevel::NewerUntested if validate_newer_export => {
+            validate_round_trip_save_bytes(raw_save).is_ok()
+        }
+        CompatibilityLevel::NewerUntested | CompatibilityLevel::OlderUntested => false,
+    };
     let warning = match compatibility {
         CompatibilityLevel::Tested => None,
         CompatibilityLevel::NewerUntested => Some(
@@ -314,6 +327,22 @@ pub fn inspect_save_bytes(raw_save: &[u8]) -> Result<SaveInspection, String> {
         inner_len: inner_save_bytes.len(),
         chunk_count: find_zlib_offsets(compressed_bytes).len(),
     })
+}
+
+fn validate_round_trip_save_bytes(raw_save: &[u8]) -> Result<(), String> {
+    let original_version = read_outer_version(&read_outer_save(raw_save)?)?;
+    let inner_save = decode_save_bytes(raw_save)?;
+    let encoded_save = encode_save_bytes(raw_save, &inner_save)?;
+    let _encoded_inner_save = decode_save_bytes(&encoded_save)?;
+    let encoded_version = read_outer_version(&read_outer_save(&encoded_save)?)?;
+
+    if original_version != encoded_version {
+        return Err(format!(
+            "Outer save version changed during round trip: {original_version} -> {encoded_version}"
+        ));
+    }
+
+    Ok(())
 }
 
 pub fn encode_save_bytes(raw_save: &[u8], new_inner_save: &Save) -> Result<Vec<u8>, String> {
@@ -343,15 +372,11 @@ pub fn encode_save_bytes(raw_save: &[u8], new_inner_save: &Save) -> Result<Vec<u
 }
 
 pub fn round_trip_save_bytes(raw_save: &[u8]) -> Result<RoundTripReport, String> {
+    let original = inspect_save_bytes_with_options(raw_save, false)?;
     let inner_save = decode_save_bytes(raw_save)?;
     let encoded_save = encode_save_bytes(raw_save, &inner_save)?;
     let _encoded_inner_save = decode_save_bytes(&encoded_save)?;
-    let original = inspect_save_bytes(raw_save)?;
-    let mut encoded = inspect_save_bytes(&encoded_save)?;
-
-    if matches!(original.compatibility, CompatibilityLevel::NewerUntested) {
-        encoded.export_allowed = true;
-    }
+    let encoded = inspect_save_bytes_with_options(&encoded_save, false)?;
 
     if original.outer_version != encoded.outer_version {
         return Err(format!(
