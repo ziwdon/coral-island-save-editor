@@ -6,13 +6,12 @@ import { SaveGameService } from '../../../core/save-game/save-game.service';
 import { editorBasicStruct, editorEnum, editorInt } from '@editor/types';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
-import { MatIcon } from '@angular/material/icon';
 import { MatMiniFabButton } from '@angular/material/button';
 
 @Component({
   selector: 'app-date-form',
   standalone: true,
-  imports: [ReactiveFormsModule, MatFormField, MatInput, MatLabel, MatIcon, MatMiniFabButton],
+  imports: [ReactiveFormsModule, MatFormField, MatInput, MatLabel, MatMiniFabButton],
   templateUrl: './date-form.component.html',
   styleUrl: './date-form.component.scss',
 })

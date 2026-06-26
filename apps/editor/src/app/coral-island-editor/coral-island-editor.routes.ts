@@ -6,6 +6,7 @@ export const CORAL_ISLAND_EDITOR_ROUTES: Routes = [
     path: '',
     component: CoralIslandEditorComponent,
     children: [
+      { path: '', pathMatch: 'full', redirectTo: 'explorer' },
       {
         path: 'world',
         loadComponent: () => import('./world/world.component').then((c) => c.WorldComponent),
@@ -18,6 +19,7 @@ export const CORAL_ISLAND_EDITOR_ROUTES: Routes = [
         path: 'player/:index',
         loadComponent: () => import('./player/player.component').then((c) => c.PlayerComponent),
       },
+      { path: '**', redirectTo: 'explorer' },
     ],
   },
 ];

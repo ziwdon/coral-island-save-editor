@@ -4,9 +4,11 @@
   "license": "MIT",
   "scripts": {
     "build-save-parser": "nx run save_parser:build-wasm",
+    "build-editor-pages": "node tools/pages/build-editor-pages.mjs",
     "build-demo": "nx run save_parser:build-wasm && nx run demo:build:production",
     "commit": "git-cz",
     "prepare": "husky",
+    "test-build-editor-pages-script": "node tools/pages/build-editor-pages.test.mjs",
     "test-editor-explorer": "ts-node --transpile-only --compiler-options '{\"module\":\"commonjs\"}' apps/editor/src/app/coral-island-editor/explorer/save-explorer.model.test.ts",
     "test-save-parser": "nx run save_parser:test"
   },
@@ -17,6 +19,7 @@
     ]
   },
   "config": {
+    "editorPagesBaseHref": "/coral-island-save-editor/",
     "commitizen": {
       "path": "cz-conventional-changelog"
     }
