@@ -9,8 +9,7 @@ use save_parser::core::{
 use serde_json::Value;
 use uesave::{PropertyInner, Save};
 
-const PLAYER_GOLD_JSON_PATH: &str =
-    "root.properties.SaveData_0.Struct.value.Struct.players_0.Array.value.Values[0].playerCurrentGold_0.Int";
+const PLAYER_GOLD_JSON_SUFFIX: &str = "playerCurrentGold_0.Int";
 
 fn workspace_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -106,6 +105,55 @@ fn get_json_path_mut<'a>(mut value: &'a mut Value, path: &str) -> Option<&'a mut
     }
 
     Some(value)
+}
+
+fn find_player_gold_path(value: &Value) -> Option<String> {
+    let mut path = Vec::new();
+    find_player_gold_path_inner(value, &mut path)
+}
+
+fn find_player_gold_path_inner(value: &Value, path: &mut Vec<String>) -> Option<String> {
+    let Value::Object(map) = value else {
+        return None;
+    };
+
+    if map
+        .get("playerCurrentGold_0")
+        .and_then(|gold| gold.get("Int"))
+        .and_then(Value::as_i64)
+        .is_some()
+    {
+        let mut gold_path = path.clone();
+        gold_path.push("playerCurrentGold_0".to_string());
+        gold_path.push("Int".to_string());
+        return Some(gold_path.join("."));
+    }
+
+    for (key, child) in map {
+        if let Value::Array(items) = child {
+            for (index, item) in items.iter().enumerate() {
+                path.push(format!("{key}[{index}]"));
+                let found = find_player_gold_path_inner(item, path);
+                path.pop();
+
+                if found.is_some() {
+                    return found;
+                }
+            }
+
+            continue;
+        }
+
+        path.push(key.clone());
+        let found = find_player_gold_path_inner(child, path);
+        path.pop();
+
+        if found.is_some() {
+            return found;
+        }
+    }
+
+    None
 }
 
 #[test]
@@ -222,12 +270,14 @@ fn inspect_allows_newer_readable_fixture_after_round_trip_validation() {
 
 #[test]
 fn edits_player_gold_fixture_and_round_trips_when_present() {
+    let mut saw_any_fixture = false;
     let mut edited_any_fixture = false;
 
     for name in ["v201.sav", "v208.sav", "v220.sav"] {
         let Some(raw_save) = read_optional_fixture(name) else {
             continue;
         };
+        saw_any_fixture = true;
 
         let inner_save = decode_save_bytes(&raw_save).unwrap_or_else(|error| {
             panic!("{} should decode before primitive edit: {}", name, error)
@@ -235,12 +285,14 @@ fn edits_player_gold_fixture_and_round_trips_when_present() {
         let mut save_json =
             serde_json::to_value(&inner_save).expect("decoded save should serialize to JSON");
 
-        let Some(gold_value) = get_json_path_mut(&mut save_json, PLAYER_GOLD_JSON_PATH) else {
-            println!("SKIP {name}: player gold path not found");
+        let Some(player_gold_json_path) = find_player_gold_path(&save_json) else {
+            println!("SKIP {name}: player gold path ending in {PLAYER_GOLD_JSON_SUFFIX} not found");
             continue;
         };
+        let gold_value = get_json_path_mut(&mut save_json, &player_gold_json_path)
+            .expect("discovered player gold path should resolve mutably");
         let Some(original_gold) = gold_value.as_i64() else {
-            println!("SKIP {name}: player gold path is not an integer");
+            println!("SKIP {name}: player gold path {player_gold_json_path} is not an integer");
             continue;
         };
 
@@ -258,7 +310,7 @@ fn edits_player_gold_fixture_and_round_trips_when_present() {
         });
         let encoded_json =
             serde_json::to_value(&encoded_inner_save).expect("encoded save should serialize");
-        let actual_gold = get_json_path(&encoded_json, PLAYER_GOLD_JSON_PATH)
+        let actual_gold = get_json_path(&encoded_json, &player_gold_json_path)
             .and_then(Value::as_i64)
             .unwrap_or_else(|| panic!("{} encoded player gold path should remain readable", name));
 
@@ -268,7 +320,14 @@ fn edits_player_gold_fixture_and_round_trips_when_present() {
         );
     }
 
-    if !edited_any_fixture {
-        println!("SKIP primitive edit round-trip test requires a fixture with player gold");
+    if saw_any_fixture && !edited_any_fixture {
+        panic!(
+            "primitive edit round-trip test found copied fixtures, but none had a path ending in {}",
+            PLAYER_GOLD_JSON_SUFFIX
+        );
+    }
+
+    if !saw_any_fixture {
+        println!("SKIP primitive edit round-trip test requires local save fixtures");
     }
 }

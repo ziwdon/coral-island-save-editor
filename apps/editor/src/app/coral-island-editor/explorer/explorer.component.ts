@@ -161,7 +161,9 @@ export class ExplorerComponent {
       const nextValue =
         node.edit.kind === 'enum'
           ? buildEnumEditValue(node.edit.enumType, this.editDraft())
-          : coercePrimitiveEditValue(node.edit.kind, this.editDraft());
+          : coercePrimitiveEditValue(node.edit.kind, this.editDraft(), {
+              integer: this.#requiresInteger(node),
+            });
 
       if (!this.saveGameService.setExisting(node.path, nextValue)) {
         this.editMessage.set(null);
@@ -218,5 +220,9 @@ export class ExplorerComponent {
 
   #pathDepth(path: string): number {
     return Math.max(parseExplorerPath(path).length - 1, 0);
+  }
+
+  #requiresInteger(node: SaveExplorerNode): boolean {
+    return ['Byte', 'Int', 'Int16', 'Int32', 'Int64', 'UInt', 'UInt16', 'UInt32', 'UInt64'].includes(node.key);
   }
 }

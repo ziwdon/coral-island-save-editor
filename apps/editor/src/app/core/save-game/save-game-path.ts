@@ -8,6 +8,10 @@ export type ExistingPathResult = {
   value: unknown;
 };
 
+export type SetExistingPathValueOptions = {
+  enumTypes?: ReadonlySet<string>;
+};
+
 const ARRAY_SEGMENT_PATTERN = /^(.+)\[(\d+)]$/;
 
 export function parseExplorerPath(path: string): ExplorerPathSegment[] {
@@ -58,7 +62,12 @@ export function getExistingPathValue(data: unknown, path: string): ExistingPathR
   return { exists: true, value: cursor };
 }
 
-export function setExistingPathValue(data: unknown, path: string, value: unknown): boolean {
+export function setExistingPathValue(
+  data: unknown,
+  path: string,
+  value: unknown,
+  options: SetExistingPathValueOptions = {},
+): boolean {
   const segments = parseExplorerPath(path);
   const leaf = segments.pop();
 
@@ -80,8 +89,16 @@ export function setExistingPathValue(data: unknown, path: string, value: unknown
       return false;
     }
 
+    if (!isSafeReplacement(arrayValue[leaf.index], value, leaf, options)) {
+      return false;
+    }
+
     arrayValue[leaf.index] = value;
     return true;
+  }
+
+  if (!isSafeReplacement(parent.value[leaf.key], value, leaf, options)) {
+    return false;
   }
 
   parent.value[leaf.key] = value;
@@ -100,4 +117,62 @@ function isRecord(value: unknown): value is Record<string, any> {
 
 function hasOwn(value: Record<string, any>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(value, key);
+}
+
+function isSafeReplacement(
+  currentValue: unknown,
+  nextValue: unknown,
+  leaf: ExplorerPathSegment,
+  options: SetExistingPathValueOptions,
+): boolean {
+  if (typeof currentValue === 'string') {
+    return typeof nextValue === 'string';
+  }
+
+  if (typeof currentValue === 'number') {
+    if (typeof nextValue !== 'number' || !Number.isFinite(nextValue)) {
+      return false;
+    }
+
+    return !requiresIntegerValue(leaf.key) || Number.isInteger(nextValue);
+  }
+
+  if (typeof currentValue === 'boolean') {
+    return typeof nextValue === 'boolean';
+  }
+
+  const currentEnum = readEnumWrapper(currentValue);
+  const nextEnum = readEnumWrapper(nextValue);
+
+  if (!currentEnum || !nextEnum) {
+    return false;
+  }
+
+  return (
+    currentEnum.enumType === nextEnum.enumType &&
+    options.enumTypes?.has(currentEnum.enumType) === true &&
+    nextEnum.value.startsWith(`${currentEnum.enumType}::`)
+  );
+}
+
+function readEnumWrapper(value: unknown) {
+  if (!isRecord(value) || !isRecord(value['Enum'])) {
+    return null;
+  }
+
+  const enumType = value['Enum']['enum_type'];
+  const enumValue = value['Enum']['value'];
+
+  if (typeof enumType !== 'string' || typeof enumValue !== 'string') {
+    return null;
+  }
+
+  return {
+    enumType,
+    value: enumValue,
+  };
+}
+
+function requiresIntegerValue(key: string): boolean {
+  return ['Byte', 'Int', 'Int16', 'Int32', 'Int64', 'UInt', 'UInt16', 'UInt32', 'UInt64'].includes(key);
 }

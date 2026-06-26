@@ -1,4 +1,5 @@
 import { computed, Injectable, Signal, signal } from '@angular/core';
+import { CORAL_ISLAND_ENUMS } from '@coral-island/enums';
 import { decode_save, encode_save, inspect_save } from '@coral/save-parser';
 import { getExistingPathValue, setExistingPathValue } from './save-game-path';
 
@@ -15,6 +16,7 @@ export type SaveInspection = {
 };
 
 const SAVE_COMPATIBILITIES = ['tested', 'newerUntested', 'olderUntested'] as const;
+const KNOWN_ENUM_TYPES = new Set(Object.keys(CORAL_ISLAND_ENUMS));
 
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -125,10 +127,12 @@ export class SaveGameService {
       return false;
     }
 
-    const updated = setExistingPathValue(data, path, value);
+    const updated = setExistingPathValue(data, path, value, {
+      enumTypes: KNOWN_ENUM_TYPES,
+    });
 
     if (updated) {
-      this.decodedData.set(data);
+      this.decodedData.set({ ...data });
     }
 
     return updated;

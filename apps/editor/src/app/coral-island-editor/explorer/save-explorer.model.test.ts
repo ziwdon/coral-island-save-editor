@@ -94,6 +94,22 @@ function testExistingPathAccess() {
   assert.equal(setExistingPathValue(data, playerGoldPath, 999), true);
   assert.equal(getExistingPathValue(data, playerGoldPath).value, 999);
 
+  assert.equal(setExistingPathValue(data, `${playerPath}.playerCurrentGold_0`, 1), false);
+  assert.deepEqual(getExistingPathValue(data, `${playerPath}.playerCurrentGold_0`).value, { Int: 999 });
+
+  assert.equal(
+    setExistingPathValue(data, weatherPath, buildEnumEditValue('EC_Weather', 'Rain'), {
+      enumTypes: new Set(['EC_Season']),
+    }),
+    false,
+  );
+  assert.equal(
+    setExistingPathValue(data, weatherPath, buildEnumEditValue('EC_Weather', 'Rain'), {
+      enumTypes: new Set(['EC_Weather']),
+    }),
+    true,
+  );
+
   assert.equal(setExistingPathValue(data, `${playerPath}.missing_0.Int`, 1), false);
   assert.equal(Object.hasOwn(data.root.properties.SaveData_0.Struct.value.Struct.players_0, 'missing_0'), false);
 }
@@ -158,10 +174,30 @@ function testSearchAndCoercion() {
   const capped = searchExplorerNodes(data, '0', { limit: 2, enumTypes: new Set(['EC_Weather']) });
   assert.equal(capped.length, 2);
 
+  const wideData = {
+    root: {
+      fields: Object.fromEntries(
+        Array.from({ length: 150 }, (_value, index) => [
+          `field_${index}`,
+          {
+            Str: index === 149 ? 'needle' : `value-${index}`,
+          },
+        ]),
+      ),
+    },
+  };
+  const deepSibling = searchExplorerNodes(wideData, 'needle', { limit: 10 });
+  assert.equal(
+    deepSibling.some((node) => node.path === 'root.fields.field_149.Str'),
+    true,
+  );
+
   assert.equal(coercePrimitiveEditValue('number', '42'), 42);
+  assert.equal(coercePrimitiveEditValue('number', '42', { integer: true }), 42);
   assert.equal(coercePrimitiveEditValue('string', 42), '42');
   assert.equal(coercePrimitiveEditValue('boolean', true), true);
   assert.throws(() => coercePrimitiveEditValue('number', ''), /valid number/);
+  assert.throws(() => coercePrimitiveEditValue('number', '42.5', { integer: true }), /whole number/);
   assert.deepEqual(buildEnumEditValue('EC_Weather', 'Sunny'), {
     Enum: {
       enum_type: 'EC_Weather',

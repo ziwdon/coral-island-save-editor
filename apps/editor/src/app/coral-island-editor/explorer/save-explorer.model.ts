@@ -120,7 +120,11 @@ export function searchExplorerNodes(root: unknown, query: string, options: Explo
   const limit = options.limit ?? DEFAULT_SEARCH_LIMIT;
   const visitLimit = options.visitLimit ?? DEFAULT_VISIT_LIMIT;
   const results: SaveExplorerNode[] = [];
-  const queue = listExplorerChildren(root, '', -1, options);
+  const childOptions = {
+    enumTypes: options.enumTypes,
+    limit: visitLimit,
+  };
+  const queue = listExplorerChildren(root, '', -1, childOptions);
   let visited = 0;
 
   while (queue.length > 0 && results.length < limit && visited < visitLimit) {
@@ -135,7 +139,7 @@ export function searchExplorerNodes(root: unknown, query: string, options: Explo
       const childValue = getExistingPathValue(root, node.path);
 
       if (childValue.exists) {
-        queue.push(...listExplorerChildren(childValue.value, node.path, node.depth, options));
+        queue.push(...listExplorerChildren(childValue.value, node.path, node.depth, childOptions));
       }
     }
   }
@@ -143,7 +147,15 @@ export function searchExplorerNodes(root: unknown, query: string, options: Explo
   return results;
 }
 
-export function coercePrimitiveEditValue(kind: PrimitiveEditKind, rawValue: unknown): boolean | number | string {
+export type PrimitiveEditOptions = {
+  integer?: boolean;
+};
+
+export function coercePrimitiveEditValue(
+  kind: PrimitiveEditKind,
+  rawValue: unknown,
+  options: PrimitiveEditOptions = {},
+): boolean | number | string {
   if (kind === 'string') {
     return String(rawValue ?? '');
   }
@@ -169,6 +181,10 @@ export function coercePrimitiveEditValue(kind: PrimitiveEditKind, rawValue: unkn
 
   if (!Number.isFinite(value)) {
     throw new Error('Enter a valid number.');
+  }
+
+  if (options.integer && !Number.isInteger(value)) {
+    throw new Error('Enter a whole number.');
   }
 
   return value;
