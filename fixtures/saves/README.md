@@ -1,8 +1,10 @@
 # Local Save Fixtures
 
-This directory is for local copies of Coral Island .sav files used by parser tests and diagnostics.
+This directory is for manual local copies of Coral Island .sav files used by parser tests and diagnostics.
 
-Do not edit files in the Steam save directory; copy saves here and work from copies.
+The browser app does not copy files into this directory. It reads the save file selected by the user and exports a downloaded copy.
+
+For parser tests and diagnostics, do not edit files in the Steam save directory. Copy saves here manually and work from those copies.
 
 Typical Proton/Steam source path:
 
