@@ -30,9 +30,11 @@
 
               <label class="edit-field">
                 <span>Quest state</span>
-                <select [value]="entry.state" (change)="updateQuestState(entry, $any($event.target).value)">
+                <select (change)="updateQuestState(entry, $any($event.target).value)">
                   @for (option of questStateOptions; track option) {
-                    <option [value]="option">{{ option | prettyEnum }}</option>
+                    <option [value]="option" [selected]="isQuestStateOptionSelected(entry, option)">
+                      {{ option | prettyEnum }}
+                    </option>
                   }
                 </select>
               </label>
@@ -49,12 +51,11 @@
 
                     <label class="edit-field">
                       <span>Status</span>
-                      <select
-                        [value]="objective.status"
-                        (change)="updateObjectiveStatus(objective, $any($event.target).value)"
-                      >
+                      <select (change)="updateObjectiveStatus(objective, $any($event.target).value)">
                         @for (option of questStepStatusOptions; track option) {
-                          <option [value]="option">{{ option | prettyEnum }}</option>
+                          <option [value]="option" [selected]="isObjectiveStatusOptionSelected(objective, option)">
+                            {{ option | prettyEnum }}
+                          </option>
                         }
                       </select>
                     </label>

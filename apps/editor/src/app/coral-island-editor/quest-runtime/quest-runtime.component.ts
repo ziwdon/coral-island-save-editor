@@ -6,6 +6,7 @@ import {
   QuestRuntimeEntry,
   QuestRuntimeObjective,
   questRuntimeEntryMatches,
+  questRuntimeEnumOptionMatches,
   QUEST_STATE_OPTIONS,
   QUEST_STEP_STATUS_OPTIONS,
   readQuestRuntimeEntries,
@@ -47,6 +48,10 @@ export class QuestRuntimeComponent {
     this.#applyExistingEdit(entry.statePath, state);
   }
 
+  protected isQuestStateOptionSelected(entry: QuestRuntimeEntry, option: string) {
+    return questRuntimeEnumOptionMatches('EC_QuestState', entry.state, option);
+  }
+
   protected updateObjectiveStatus(objective: QuestRuntimeObjective, status: string) {
     if (!(this.questStepStatusOptions as readonly string[]).includes(status)) {
       this.#setError('Unknown objective status.');
@@ -54,6 +59,10 @@ export class QuestRuntimeComponent {
     }
 
     this.#applyExistingEdit(objective.statusPath, buildQuestStepStatusValue(status));
+  }
+
+  protected isObjectiveStatusOptionSelected(objective: QuestRuntimeObjective, option: string) {
+    return questRuntimeEnumOptionMatches('EC_QuestStepStatus', objective.status, option);
   }
 
   protected updateObjectiveProgress(objective: QuestRuntimeObjective, value: string) {

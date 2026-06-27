@@ -6,7 +6,7 @@ export const CORAL_ISLAND_EDITOR_ROUTES: Routes = [
     path: '',
     component: CoralIslandEditorComponent,
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'explorer' },
+      { path: '', pathMatch: 'full', redirectTo: 'player/0' },
       {
         path: 'world',
         loadComponent: () => import('./world/world.component').then((c) => c.WorldComponent),

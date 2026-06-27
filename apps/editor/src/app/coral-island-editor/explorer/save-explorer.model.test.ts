@@ -18,7 +18,7 @@ import {
   playerStructPath,
 } from '../../core/save-game/coral-island-save-paths';
 import { enumOptionsForPathValue } from '../forms/enum-form/enum-form.model';
-import { readQuestRuntimeEntries } from '../quest-runtime/quest-runtime.model';
+import { questRuntimeEnumOptionMatches, readQuestRuntimeEntries } from '../quest-runtime/quest-runtime.model';
 
 function sampleSave() {
   return {
@@ -538,6 +538,20 @@ function testQuestRuntimeEntriesExposeMeaningfulObjectiveFields() {
   );
 }
 
+function testQuestRuntimeEnumOptionMatchingHandlesSavedEnumShapes() {
+  assert.equal(questRuntimeEnumOptionMatches('EC_QuestState', 'EC_QuestState::Active', 'EC_QuestState::Active'), true);
+  assert.equal(questRuntimeEnumOptionMatches('EC_QuestState', 'Active', 'EC_QuestState::Active'), true);
+  assert.equal(
+    questRuntimeEnumOptionMatches(
+      'EC_QuestStepStatus',
+      'EC_QuestStepStatus::Processing',
+      'EC_QuestStepStatus::Processing',
+    ),
+    true,
+  );
+  assert.equal(questRuntimeEnumOptionMatches('EC_QuestStepStatus', 'Passed', 'EC_QuestStepStatus::Processing'), false);
+}
+
 function testFocusedEnumOptionsHandleMissingPaths() {
   assert.equal(enumOptionsForPathValue(undefined).length, 0);
   assert.equal(enumOptionsForPathValue({}).length, 0);
@@ -562,5 +576,6 @@ testNodeDescriptionAndChildren();
 testSearchAndCoercion();
 testFocusedEnumOptionsHandleMissingPaths();
 testQuestRuntimeEntriesExposeMeaningfulObjectiveFields();
+testQuestRuntimeEnumOptionMatchingHandlesSavedEnumShapes();
 
 console.log('save explorer model tests passed');
