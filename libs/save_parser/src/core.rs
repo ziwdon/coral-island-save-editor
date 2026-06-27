@@ -31,6 +31,7 @@ pub struct SaveInspection {
     pub outer_version: i32,
     pub compatibility: CompatibilityLevel,
     pub export_allowed: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub warning: Option<String>,
     pub compressed_len: usize,
     pub inner_len: usize,

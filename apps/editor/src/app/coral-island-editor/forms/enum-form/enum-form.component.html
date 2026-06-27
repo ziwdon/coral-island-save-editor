@@ -1,1 +1,3 @@
-<app-enum-form-part [options]="options()" [path]="path()" [label]="label()" />
+@if (enumValue()) {
+  <app-enum-form-part [options]="options()" [path]="path()" [label]="label()" />
+}
