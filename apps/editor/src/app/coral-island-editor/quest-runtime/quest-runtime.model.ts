@@ -73,6 +73,14 @@ export function buildQuestStepStatusValue(status: string) {
   };
 }
 
+export function questRuntimeEnumOptionMatches(enumType: string, currentValue: string, option: string): boolean {
+  return normalizeQuestRuntimeEnumValue(enumType, currentValue) === normalizeQuestRuntimeEnumValue(enumType, option);
+}
+
+function normalizeQuestRuntimeEnumValue(enumType: string, value: string): string {
+  return value.startsWith(`${enumType}::`) ? value : `${enumType}::${value}`;
+}
+
 function readQuestRuntimeScopes(data: unknown): QuestRuntimeScope[] {
   const playerCount = readArray(data, PLAYERS_ARRAY_PATH).length;
   const playerTrackedQuestIds = Array.from({ length: playerCount }, (_value, index) =>
