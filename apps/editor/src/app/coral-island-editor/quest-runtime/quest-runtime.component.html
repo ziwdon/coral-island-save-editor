@@ -1,0 +1,104 @@
+<section class="quest-runtime-page p-8">
+  <h2 class="text-white text-3xl mb-5">Quest runtime</h2>
+
+  <div class="quest-layout">
+    <section class="quest-panel min-w-0 border border-white/20 bg-black/70 text-white p-4">
+      <label class="search-field">
+        <span>Search quests and objectives</span>
+        <input
+          autocomplete="off"
+          placeholder="EntranceExam, visit_bos, EC_QuestStepStatus::Passed"
+          type="search"
+          [value]="searchQuery()"
+          (input)="searchQuery.set($any($event.target).value)"
+        />
+      </label>
+
+      <p class="panel-note">{{ entries().length }} quests, {{ objectiveCount() }} objective records</p>
+
+      <div class="quest-list">
+        @for (entry of entries(); track entry.sourceId + ':' + entry.questId) {
+          <article class="quest-row">
+            <header class="quest-header">
+              <div class="quest-title">
+                <span class="source-badge">{{ entry.sourceLabel }}</span>
+                @if (entry.tracked) {
+                  <span class="tracked-badge">Tracked</span>
+                }
+                <h3>{{ entry.questId }}</h3>
+              </div>
+
+              <label class="edit-field">
+                <span>Quest state</span>
+                <select [value]="entry.state" (change)="updateQuestState(entry, $any($event.target).value)">
+                  @for (option of questStateOptions; track option) {
+                    <option [value]="option">{{ option | prettyEnum }}</option>
+                  }
+                </select>
+              </label>
+            </header>
+
+            @if (entry.objectives.length) {
+              <div class="objective-list">
+                @for (objective of entry.objectives; track objective.fullPath) {
+                  <div class="objective-row">
+                    <div class="objective-name">
+                      <strong>{{ objective.label }}</strong>
+                      <code>{{ objective.fullPath }}</code>
+                    </div>
+
+                    <label class="edit-field">
+                      <span>Status</span>
+                      <select
+                        [value]="objective.status"
+                        (change)="updateObjectiveStatus(objective, $any($event.target).value)"
+                      >
+                        @for (option of questStepStatusOptions; track option) {
+                          <option [value]="option">{{ option | prettyEnum }}</option>
+                        }
+                      </select>
+                    </label>
+
+                    <label class="edit-field progress-field">
+                      <span>Progress</span>
+                      <input
+                        min="0"
+                        step="1"
+                        type="number"
+                        [value]="objective.currentProgress"
+                        (change)="updateObjectiveProgress(objective, $any($event.target).value)"
+                      />
+                    </label>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p class="empty-state">No saved objective records for this quest.</p>
+            }
+          </article>
+        } @empty {
+          <p class="empty-state">No quests match the current search.</p>
+        }
+      </div>
+    </section>
+
+    <aside class="quest-details min-w-0 border border-white/20 bg-black/70 text-white p-4">
+      <h3>Editable fields</h3>
+      <dl>
+        <dt>Quest state</dt>
+        <dd>Existing <code>EC_QuestState</code> value</dd>
+        <dt>Objective status</dt>
+        <dd>Existing <code>EC_QuestStepStatus</code> wrapper</dd>
+        <dt>Objective progress</dt>
+        <dd>Existing <code>currentProgress_0.Int</code> value</dd>
+      </dl>
+
+      @if (error()) {
+        <p class="edit-error">{{ error() }}</p>
+      }
+      @if (message()) {
+        <p class="edit-message">{{ message() }}</p>
+      }
+    </aside>
+  </div>
+</section>

@@ -18,6 +18,7 @@ import {
   playerStructPath,
 } from '../../core/save-game/coral-island-save-paths';
 import { enumOptionsForPathValue } from '../forms/enum-form/enum-form.model';
+import { readQuestRuntimeEntries } from '../quest-runtime/quest-runtime.model';
 
 function sampleSave() {
   return {
@@ -76,6 +77,112 @@ function sampleSave() {
                                     Struct: {
                                       Name_0: { Str: 'Ava' },
                                       hasSeenIntro_0: { Bool: true },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+}
+
+function questRuntimeSampleSave() {
+  return {
+    root: {
+      properties: {
+        saveData_0: {
+          Struct: {
+            value: {
+              Struct: {
+                quests_0: {
+                  Map: {
+                    value: [
+                      {
+                        key: { Name: 'EntranceExam' },
+                        value: { Enum: 'EC_QuestState::Active' },
+                      },
+                    ],
+                  },
+                },
+                dynamicQuestConditionDataMap_0: {
+                  Map: {
+                    value: [
+                      {
+                        key: { Name: 'EntranceExam/kill_enemy/kill' },
+                        value: {
+                          Struct: {
+                            Struct: {
+                              conditionFullPath_0: { Name: 'EntranceExam/kill_enemy/kill' },
+                              conditionDynamicData_0: {
+                                Struct: {
+                                  value: {
+                                    Struct: {
+                                      currentProgress_0: { Int: 30 },
+                                      status_0: {
+                                        Enum: {
+                                          value: 'EC_QuestStepStatus::Passed',
+                                          enum_type: 'EC_QuestStepStatus',
+                                        },
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                      {
+                        key: { Name: 'EntranceExam/visit_bos/visit_kira_house' },
+                        value: {
+                          Struct: {
+                            Struct: {
+                              conditionFullPath_0: { Name: 'EntranceExam/visit_bos/visit_kira_house' },
+                              conditionDynamicData_0: {
+                                Struct: {
+                                  value: {
+                                    Struct: {
+                                      currentProgress_0: { Int: 1 },
+                                      status_0: {
+                                        Enum: {
+                                          value: 'EC_QuestStepStatus::Processing',
+                                          enum_type: 'EC_QuestStepStatus',
+                                        },
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+                players_0: {
+                  Array: {
+                    value: {
+                      Struct: {
+                        value: [
+                          {
+                            Struct: {
+                              currentlyTrackedQuests_0: {
+                                Array: {
+                                  value: {
+                                    Base: {
+                                      Name: ['EntranceExam'],
                                     },
                                   },
                                 },
@@ -331,6 +438,34 @@ function testSearchAndCoercion() {
     true,
   );
 
+  const manyEarlierNodes = {
+    root: {
+      fields: Object.fromEntries(
+        Array.from({ length: 41000 }, (_value, index) => [
+          `field_${index}`,
+          index === 40999
+            ? {
+                status_0: {
+                  Enum: {
+                    value: 'EC_QuestStepStatus::Passed',
+                    enum_type: 'EC_QuestStepStatus',
+                  },
+                },
+              }
+            : { Int: index },
+        ]),
+      ),
+    },
+  };
+  const lateEnumSearch = searchExplorerNodes(manyEarlierNodes, 'EC_QuestStepStatus::Passed', {
+    limit: 10,
+    enumTypes: new Set(['EC_QuestStepStatus']),
+  });
+  assert.equal(
+    lateEnumSearch.some((node) => node.path === 'root.fields.field_40999.status_0'),
+    true,
+  );
+
   assert.equal(coercePrimitiveEditValue('number', '42'), 42);
   assert.equal(coercePrimitiveEditValue('number', '42', { integer: true }), 42);
   assert.equal(coercePrimitiveEditValue('number', '255', { integer: true, min: 0, max: 255 }), 255);
@@ -356,6 +491,53 @@ function testSearchAndCoercion() {
   });
 }
 
+function testQuestRuntimeEntriesExposeMeaningfulObjectiveFields() {
+  const entries = readQuestRuntimeEntries(questRuntimeSampleSave());
+  const entranceExam = entries.find((entry) => entry.questId === 'EntranceExam');
+
+  assert.ok(entranceExam);
+  assert.equal(entranceExam.sourceLabel, 'World');
+  assert.equal(entranceExam.state, 'EC_QuestState::Active');
+  assert.equal(entranceExam.statePath, `${SAVE_DATA_STRUCT_PATH}.quests_0.Map.value[0].value.Enum`);
+  assert.equal(entranceExam.tracked, true);
+  assert.deepEqual(
+    entranceExam.objectives.map((objective) => ({
+      fullPath: objective.fullPath,
+      label: objective.label,
+      currentProgress: objective.currentProgress,
+      status: objective.status,
+      progressPath: objective.progressPath,
+      statusPath: objective.statusPath,
+    })),
+    [
+      {
+        fullPath: 'EntranceExam/kill_enemy/kill',
+        label: 'kill_enemy / kill',
+        currentProgress: 30,
+        status: 'EC_QuestStepStatus::Passed',
+        progressPath:
+          `${SAVE_DATA_STRUCT_PATH}.dynamicQuestConditionDataMap_0.Map.value[0]` +
+          '.value.Struct.Struct.conditionDynamicData_0.Struct.value.Struct.currentProgress_0.Int',
+        statusPath:
+          `${SAVE_DATA_STRUCT_PATH}.dynamicQuestConditionDataMap_0.Map.value[0]` +
+          '.value.Struct.Struct.conditionDynamicData_0.Struct.value.Struct.status_0',
+      },
+      {
+        fullPath: 'EntranceExam/visit_bos/visit_kira_house',
+        label: 'visit_bos / visit_kira_house',
+        currentProgress: 1,
+        status: 'EC_QuestStepStatus::Processing',
+        progressPath:
+          `${SAVE_DATA_STRUCT_PATH}.dynamicQuestConditionDataMap_0.Map.value[1]` +
+          '.value.Struct.Struct.conditionDynamicData_0.Struct.value.Struct.currentProgress_0.Int',
+        statusPath:
+          `${SAVE_DATA_STRUCT_PATH}.dynamicQuestConditionDataMap_0.Map.value[1]` +
+          '.value.Struct.Struct.conditionDynamicData_0.Struct.value.Struct.status_0',
+      },
+    ],
+  );
+}
+
 function testFocusedEnumOptionsHandleMissingPaths() {
   assert.equal(enumOptionsForPathValue(undefined).length, 0);
   assert.equal(enumOptionsForPathValue({}).length, 0);
@@ -379,5 +561,6 @@ testSaveGameServiceSetOnlyUpdatesExistingPaths();
 testNodeDescriptionAndChildren();
 testSearchAndCoercion();
 testFocusedEnumOptionsHandleMissingPaths();
+testQuestRuntimeEntriesExposeMeaningfulObjectiveFields();
 
 console.log('save explorer model tests passed');

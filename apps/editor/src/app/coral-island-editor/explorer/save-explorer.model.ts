@@ -47,7 +47,7 @@ export type ExplorerOptions = {
 };
 
 const DEFAULT_SEARCH_LIMIT = 100;
-const DEFAULT_VISIT_LIMIT = 40000;
+const DEFAULT_VISIT_LIMIT = 250000;
 
 export function listExplorerChildren(
   value: unknown,

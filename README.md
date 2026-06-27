@@ -2,7 +2,7 @@
 
 Browser-based save editor for Coral Island.
 
-[Try it here](https://ziwdon.github.io/coral-island-save-editor/)
+<a href="https://ziwdon.github.io/coral-island-save-editor/" target="_blank" rel="noopener noreferrer">Try it here</a>
 
 > [!WARNING]
 > Always keep a backup of your original save before testing an exported file. There is no guarantee that an edited save will remain internally consistent, accepted by the game, or free from gameplay side effects. Use exported saves at your own risk.
