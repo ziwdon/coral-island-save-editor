@@ -7,8 +7,14 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "@angular-devkit/build-angular:application",
+      "executor": "@angular/build:application",
       "outputs": ["{options.outputPath}"],
+      "dependsOn": [
+        {
+          "target": "extract-enums"
+        }
+      ],
+      "defaultConfiguration": "production",
       "options": {
         "outputPath": "dist/apps/editor",
         "index": "apps/editor/src/index.html",
@@ -48,16 +54,16 @@
           "extractLicenses": false,
           "sourceMap": true
         }
-      },
+      }
+    },
+    "serve": {
+      "executor": "@angular/build:dev-server",
       "dependsOn": [
         {
           "target": "extract-enums"
         }
       ],
-      "defaultConfiguration": "production"
-    },
-    "serve": {
-      "executor": "@angular-devkit/build-angular:dev-server",
+      "defaultConfiguration": "development",
       "configurations": {
         "production": {
           "buildTarget": "editor:build:production"
@@ -66,15 +72,10 @@
           "buildTarget": "editor:build:development"
         }
       },
-      "dependsOn": [
-        {
-          "target": "extract-enums"
-        }
-      ],
-      "defaultConfiguration": "development"
+      "continuous": true
     },
     "extract-i18n": {
-      "executor": "@angular-devkit/build-angular:extract-i18n",
+      "executor": "@angular/build:extract-i18n",
       "options": {
         "buildTarget": "editor:build"
       }
@@ -92,12 +93,14 @@
     },
     "extract-enums": {
       "executor": "nx:run-commands",
+      "defaultConfiguration": "extract",
       "configurations": {
         "extract": {
-          "commands": ["ts-node libs/coral-island-enums/extractor.ts"]
+          "commands": [
+            "ts-node --compiler-options '{\"module\":\"commonjs\",\"moduleResolution\":\"node\"}' libs/coral-island-enums/extractor.ts"
+          ]
         }
-      },
-      "defaultConfiguration": "extract"
+      }
     }
   }
 }

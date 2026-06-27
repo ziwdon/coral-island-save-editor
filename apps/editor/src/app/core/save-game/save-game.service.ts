@@ -197,7 +197,8 @@ export class SaveGameService {
   }
 
   #downloadBlob(data: Uint8Array, fileName: string, mimeType: string) {
-    const blob = new Blob([data], {
+    const blobPart = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
+    const blob = new Blob([blobPart], {
       type: mimeType,
     });
 

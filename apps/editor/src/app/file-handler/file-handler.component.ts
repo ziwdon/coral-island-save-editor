@@ -1,11 +1,11 @@
 import { Component, ElementRef, HostListener, inject, signal, viewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { SaveGameService } from '../core/save-game/save-game.service';
 
 @Component({
   selector: 'app-file-handler',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './file-handler.component.html',
   styleUrl: './file-handler.component.scss',
   host: {
@@ -44,7 +44,7 @@ export class FileHandlerComponent {
 
   @HostListener('keydown.enter', ['$event'])
   @HostListener('keydown.space', ['$event'])
-  onKeyboardOpen(event: KeyboardEvent) {
+  onKeyboardOpen(event: Event) {
     event.preventDefault();
     this.openFilePicker();
   }

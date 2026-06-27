@@ -1,6 +1,5 @@
 import { Component, inject, Signal } from '@angular/core';
 import { SaveGameService } from '../../core/save-game/save-game.service';
-import { PrimitiveFormPartComponent } from '../../form-parts/primitive-form-part/primitive-form-part.component';
 import { SaveGameValuePipe } from '../../core/save-game/save-game-value.pipe';
 import { MoneyComponent } from '@coral-island/ui';
 import { RouterLink, RouterLinkActive } from '@angular/router';
@@ -9,7 +8,7 @@ import { PLAYERS_ARRAY_PATH } from '../../core/save-game/coral-island-save-paths
 @Component({
   selector: 'app-players-list',
   standalone: true,
-  imports: [PrimitiveFormPartComponent, SaveGameValuePipe, MoneyComponent, RouterLink, RouterLinkActive],
+  imports: [SaveGameValuePipe, MoneyComponent, RouterLink, RouterLinkActive],
   templateUrl: './players-list.component.html',
 })
 export class PlayersListComponent {
