@@ -1,7 +1,7 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { EnumFormPartComponent } from '../../../form-parts/enum-form-part/enum-form-part.component';
-import { CORAL_ISLAND_ENUMS, SaveGameEnum } from '@coral-island/enums';
 import { SaveGameService } from '../../../core/save-game/save-game.service';
+import { enumOptionsForPathValue, readSaveGameEnum } from './enum-form.model';
 
 @Component({
   selector: 'app-enum-form',
@@ -14,8 +14,8 @@ export class EnumFormComponent {
   label = input.required<string>();
 
   #saveGameService = inject(SaveGameService);
+  enumValue = computed(() => readSaveGameEnum(this.#saveGameService.get(this.path())()));
   options = computed(() => {
-    const pathResult: SaveGameEnum = this.#saveGameService.get(this.path())();
-    return CORAL_ISLAND_ENUMS[pathResult.Enum.enum_type] ?? [];
+    return enumOptionsForPathValue(this.enumValue());
   });
 }

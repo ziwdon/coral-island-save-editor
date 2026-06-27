@@ -17,6 +17,7 @@ import {
   SAVE_DATA_STRUCT_PATH,
   playerStructPath,
 } from '../../core/save-game/coral-island-save-paths';
+import { enumOptionsForPathValue } from '../forms/enum-form/enum-form.model';
 
 function sampleSave() {
   return {
@@ -355,11 +356,28 @@ function testSearchAndCoercion() {
   });
 }
 
+function testFocusedEnumOptionsHandleMissingPaths() {
+  assert.equal(enumOptionsForPathValue(undefined).length, 0);
+  assert.equal(enumOptionsForPathValue({}).length, 0);
+  assert.equal(enumOptionsForPathValue({ Enum: { enum_type: 'MissingEnum', value: 'MissingEnum::Value' } }).length, 0);
+  assert.deepEqual(enumOptionsForPathValue({ Enum: { enum_type: 'EC_Weather', value: 'EC_Weather::Sunny' } }), [
+    'EC_Weather::None',
+    'EC_Weather::Sunny',
+    'EC_Weather::Rain',
+    'EC_Weather::Storm',
+    'EC_Weather::Windy',
+    'EC_Weather::Snow',
+    'EC_Weather::Blizzard',
+    'EC_Weather::COUNT',
+  ]);
+}
+
 testPathParsing();
 testExistingPathAccess();
 testFocusedEditorCanonicalPaths();
 testSaveGameServiceSetOnlyUpdatesExistingPaths();
 testNodeDescriptionAndChildren();
 testSearchAndCoercion();
+testFocusedEnumOptionsHandleMissingPaths();
 
 console.log('save explorer model tests passed');
