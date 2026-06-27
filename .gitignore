@@ -54,3 +54,8 @@ Thumbs.db
 /fixtures/saves/*.sav
 /fixtures/saves/*.sav.json
 /fixtures/saves/manifest.local.json
+
+.claude/worktrees
+.nx/polygraph
+.nx/self-healing
+.nx/migrate-runs

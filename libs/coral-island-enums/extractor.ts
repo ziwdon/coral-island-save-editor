@@ -8,6 +8,30 @@ const regex = /enum class (?<enumType>.*?) : .*?{\s(?<enumValues>.*?)};/gms;
 let m;
 
 const enums: Record<string, string[]> = {};
+const identifierPattern = /^[A-Za-z_$][\w$]*$/;
+
+const formatPropertyName = (name: string) => (identifierPattern.test(name) ? name : formatString(name));
+
+const formatString = (value: string) => `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+
+const formatProperty = (name: string, values: string[]) => {
+  const propertyName = formatPropertyName(name);
+  const inlineProperty = `  ${propertyName}: [${values.map(formatString).join(', ')}],`;
+
+  if (inlineProperty.length <= 120) {
+    return [inlineProperty];
+  }
+
+  return [`  ${propertyName}: [`, ...values.map((value) => `    ${formatString(value)},`), '  ],'];
+};
+
+const formatEnums = (enumValues: Record<string, string[]>) =>
+  [
+    'export const CORAL_ISLAND_ENUMS = {',
+    ...Object.entries(enumValues).flatMap(([name, values]) => formatProperty(name, values)),
+    '} as const;',
+    '',
+  ].join('\n');
 
 while ((m = regex.exec(headerFileContent)) !== null) {
   // This is necessary to avoid infinite loops with zero-width matches
@@ -30,8 +54,4 @@ while ((m = regex.exec(headerFileContent)) !== null) {
   enums[name] = values;
 }
 
-fs.writeFileSync(
-  path.join(__dirname, 'coral-island-enums.const.ts'),
-  `export const CORAL_ISLAND_ENUMS = ${JSON.stringify(enums, null, 2)} as const;`,
-  { flag: 'w' },
-);
+fs.writeFileSync(path.join(__dirname, 'coral-island-enums.const.ts'), formatEnums(enums), { flag: 'w' });
