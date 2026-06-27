@@ -20,7 +20,7 @@ import {
 const ROOT_RENDER_LIMIT = 100;
 const CHILD_RENDER_LIMIT = 200;
 const SEARCH_RENDER_LIMIT = 100;
-const SEARCH_VISIT_LIMIT = 40000;
+const SEARCH_VISIT_LIMIT = 250000;
 
 @Component({
   selector: 'app-explorer',
@@ -136,7 +136,7 @@ export class ExplorerComponent {
   }
 
   protected canExpand(node: SaveExplorerNode): boolean {
-    return node.childCount > 0;
+    return !this.searchQuery().trim() && node.childCount > 0;
   }
 
   protected isExpanded(node: SaveExplorerNode): boolean {
