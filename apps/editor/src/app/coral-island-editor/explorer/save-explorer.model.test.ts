@@ -19,6 +19,13 @@ import {
 } from '../../core/save-game/coral-island-save-paths';
 import { enumOptionsForPathValue } from '../forms/enum-form/enum-form.model';
 import { questRuntimeEnumOptionMatches, readQuestRuntimeEntries } from '../quest-runtime/quest-runtime.model';
+import {
+  heartLevelToPoints,
+  readRelationshipHeartEntries,
+  readRelationshipPlayers,
+  relationshipHeartEntryMatches,
+  relationshipPointsToHeartLevel,
+} from '../relationships/relationship-hearts.model';
 
 function sampleSave() {
   return {
@@ -183,6 +190,108 @@ function questRuntimeSampleSave() {
                                   value: {
                                     Base: {
                                       Name: ['EntranceExam'],
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+}
+
+function relationshipSampleSave() {
+  return {
+    root: {
+      properties: {
+        saveData_0: {
+          Struct: {
+            value: {
+              Struct: {
+                NPCSaveData_0: {
+                  Map: {
+                    value: [
+                      {
+                        key: { Name: 'WorldOnly' },
+                        value: {
+                          Struct: {
+                            Struct: {
+                              heartPoints_0: { Int: 5250 },
+                            },
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+                players_0: {
+                  Array: {
+                    value: {
+                      Struct: {
+                        value: [
+                          {
+                            Struct: {
+                              playerInfo_0: {
+                                Struct: {
+                                  value: {
+                                    Struct: {
+                                      Name_0: { Str: 'Ava' },
+                                    },
+                                  },
+                                },
+                              },
+                              npcRelationshipData_0: {
+                                Array: {
+                                  value: {
+                                    Struct: {
+                                      value: [
+                                        {
+                                          Struct: {
+                                            npcId_0: { Name: 'Connor' },
+                                            heartPoints_0: { Int: 535 },
+                                            relationshipStatus_0: {
+                                              Enum: {
+                                                enum_type: 'EC_RelationshipStatus',
+                                                value: 'EC_RelationshipStatus::NONE',
+                                              },
+                                            },
+                                          },
+                                        },
+                                        {
+                                          Struct: {
+                                            npcId_0: { Name: 'Macy' },
+                                            heartPoints_0: { Int: 5250 },
+                                            relationshipStatus_0: {
+                                              Enum: {
+                                                enum_type: 'EC_RelationshipStatus',
+                                                value: 'EC_RelationshipStatus::NONE',
+                                              },
+                                            },
+                                          },
+                                        },
+                                        {
+                                          Struct: {
+                                            npcId_0: { Name: 'OverCap' },
+                                            heartPoints_0: { Int: 6000 },
+                                            relationshipStatus_0: {
+                                              Enum: {
+                                                enum_type: 'EC_RelationshipStatus',
+                                                value: 'EC_RelationshipStatus::NONE',
+                                              },
+                                            },
+                                          },
+                                        },
+                                      ],
                                     },
                                   },
                                 },
@@ -568,6 +677,85 @@ function testFocusedEnumOptionsHandleMissingPaths() {
   ]);
 }
 
+function testRelationshipHeartEntriesReadPlayerSpecificDataOnly() {
+  const entries = readRelationshipHeartEntries(relationshipSampleSave(), 0);
+
+  assert.deepEqual(
+    entries.map((entry) => ({
+      npcId: entry.npcId,
+      heartPoints: entry.heartPoints,
+      heartLevel: entry.heartLevel.level,
+      pointsPath: entry.pointsPath,
+    })),
+    [
+      {
+        npcId: 'Connor',
+        heartPoints: 535,
+        heartLevel: 1,
+        pointsPath:
+          `${PLAYERS_ARRAY_PATH}[0].Struct.npcRelationshipData_0.Array.value.Struct.value[0]` +
+          '.Struct.heartPoints_0.Int',
+      },
+      {
+        npcId: 'Macy',
+        heartPoints: 5250,
+        heartLevel: 10,
+        pointsPath:
+          `${PLAYERS_ARRAY_PATH}[0].Struct.npcRelationshipData_0.Array.value.Struct.value[1]` +
+          '.Struct.heartPoints_0.Int',
+      },
+      {
+        npcId: 'OverCap',
+        heartPoints: 6000,
+        heartLevel: 10,
+        pointsPath:
+          `${PLAYERS_ARRAY_PATH}[0].Struct.npcRelationshipData_0.Array.value.Struct.value[2]` +
+          '.Struct.heartPoints_0.Int',
+      },
+    ],
+  );
+}
+
+function testRelationshipHeartScaleUsesKnownThresholds() {
+  assert.equal(heartLevelToPoints(0), 0);
+  assert.equal(heartLevelToPoints(1), 300);
+  assert.equal(heartLevelToPoints(5), 2000);
+  assert.equal(heartLevelToPoints(10), 5250);
+  assert.equal(heartLevelToPoints(-1), null);
+  assert.equal(heartLevelToPoints(11), null);
+
+  assert.deepEqual(relationshipPointsToHeartLevel(535), {
+    level: 1,
+    thresholdPoints: 300,
+    nextThresholdPoints: 650,
+    aboveKnownCap: false,
+    betweenThresholds: true,
+  });
+  assert.deepEqual(relationshipPointsToHeartLevel(5250), {
+    level: 10,
+    thresholdPoints: 5250,
+    nextThresholdPoints: null,
+    aboveKnownCap: false,
+    betweenThresholds: false,
+  });
+  assert.deepEqual(relationshipPointsToHeartLevel(6000), {
+    level: 10,
+    thresholdPoints: 5250,
+    nextThresholdPoints: null,
+    aboveKnownCap: true,
+    betweenThresholds: false,
+  });
+}
+
+function testRelationshipPlayersAndSearch() {
+  const players = readRelationshipPlayers(relationshipSampleSave());
+  assert.deepEqual(players, [{ index: 0, label: 'Ava' }]);
+
+  const [connor] = readRelationshipHeartEntries(relationshipSampleSave(), 0);
+  assert.equal(relationshipHeartEntryMatches(connor, 'conn'), true);
+  assert.equal(relationshipHeartEntryMatches(connor, 'macy'), false);
+}
+
 testPathParsing();
 testExistingPathAccess();
 testFocusedEditorCanonicalPaths();
@@ -577,5 +765,8 @@ testSearchAndCoercion();
 testFocusedEnumOptionsHandleMissingPaths();
 testQuestRuntimeEntriesExposeMeaningfulObjectiveFields();
 testQuestRuntimeEnumOptionMatchingHandlesSavedEnumShapes();
+testRelationshipHeartEntriesReadPlayerSpecificDataOnly();
+testRelationshipHeartScaleUsesKnownThresholds();
+testRelationshipPlayersAndSearch();
 
 console.log('save explorer model tests passed');
