@@ -12,12 +12,17 @@ export const CORAL_ISLAND_EDITOR_ROUTES: Routes = [
         loadComponent: () => import('./world/world.component').then((c) => c.WorldComponent),
       },
       {
-        path: 'explorer',
-        loadComponent: () => import('./explorer/explorer.component').then((c) => c.ExplorerComponent),
-      },
-      {
         path: 'quests',
         loadComponent: () => import('./quest-runtime/quest-runtime.component').then((c) => c.QuestRuntimeComponent),
+      },
+      {
+        path: 'relationships',
+        loadComponent: () =>
+          import('./relationships/relationship-hearts.component').then((c) => c.RelationshipHeartsComponent),
+      },
+      {
+        path: 'explorer',
+        loadComponent: () => import('./explorer/explorer.component').then((c) => c.ExplorerComponent),
       },
       {
         path: 'player/:index',

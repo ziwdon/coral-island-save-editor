@@ -1,0 +1,89 @@
+<section class="relationship-page p-8">
+  <h2 class="text-white text-3xl mb-5">Relationships</h2>
+
+  <section class="relationship-panel min-w-0 border border-white/20 bg-black/70 text-white p-4">
+    <div class="relationship-toolbar">
+      @if (players().length > 1) {
+        <label class="edit-field player-field">
+          <span>Player</span>
+          <select [value]="selectedPlayerIndex()" (change)="selectPlayer($any($event.target).value)">
+            @for (player of players(); track player.index) {
+              <option [value]="player.index">{{ player.label }}</option>
+            }
+          </select>
+        </label>
+      }
+
+      <label class="search-field">
+        <span>Search NPCs</span>
+        <input
+          autocomplete="off"
+          placeholder="Connor, Macy, Semeru"
+          type="search"
+          [value]="searchQuery()"
+          (input)="searchQuery.set($any($event.target).value)"
+        />
+      </label>
+    </div>
+
+    <p class="panel-note">{{ entries().length }} relationship records</p>
+
+    @if (error()) {
+      <p class="edit-error">{{ error() }}</p>
+    }
+    @if (message()) {
+      <p class="edit-message">{{ message() }}</p>
+    }
+
+    <div class="relationship-list">
+      @for (entry of entries(); track entry.playerIndex + ':' + entry.npcId) {
+        <article class="relationship-row">
+          <div class="npc-name">
+            <h3>{{ entry.npcId }}</h3>
+            @if (entry.heartLevel.aboveKnownCap) {
+              <span class="state-badge warning">Above known cap</span>
+            } @else if (entry.heartLevel.betweenThresholds) {
+              <span class="state-badge">Between levels</span>
+            }
+          </div>
+
+          <div class="heart-controls" [attr.aria-label]="'Heart level for ' + entry.npcId">
+            <button
+              class="step-button"
+              type="button"
+              [disabled]="!canDecrease(entry)"
+              (click)="stepHeartLevel(entry, -1)"
+              [attr.aria-label]="'Decrease ' + entry.npcId + ' relationship heart level'"
+            >
+              -
+            </button>
+
+            <label class="level-field">
+              <span>Heart level</span>
+              <input
+                min="0"
+                step="1"
+                type="number"
+                [attr.max]="maxHeartLevel"
+                [value]="entry.heartLevel.level"
+                (change)="updateHeartLevel(entry, $any($event.target).value)"
+              />
+            </label>
+
+            <button
+              class="step-button"
+              type="button"
+              [disabled]="!canIncrease(entry)"
+              (click)="stepHeartLevel(entry, 1)"
+              [attr.aria-label]="'Increase ' + entry.npcId + ' relationship heart level'"
+            >
+              +
+            </button>
+          </div>
+        </article>
+      } @empty {
+        <p class="empty-state">No relationship records match the current selection.</p>
+      }
+    </div>
+  </section>
+</section>
