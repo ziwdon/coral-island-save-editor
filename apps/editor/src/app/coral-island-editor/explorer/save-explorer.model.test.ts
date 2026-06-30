@@ -291,6 +291,18 @@ function relationshipSampleSave() {
                                             },
                                           },
                                         },
+                                        {
+                                          Struct: {
+                                            npcId_0: { Name: 'alice' },
+                                            heartPoints_0: { Int: 300 },
+                                            relationshipStatus_0: {
+                                              Enum: {
+                                                enum_type: 'EC_RelationshipStatus',
+                                                value: 'EC_RelationshipStatus::NONE',
+                                              },
+                                            },
+                                          },
+                                        },
                                       ],
                                     },
                                   },
@@ -683,33 +695,41 @@ function testRelationshipHeartEntriesReadPlayerSpecificDataOnly() {
   assert.deepEqual(
     entries.map((entry) => ({
       npcId: entry.npcId,
+      displayName: entry.displayName,
       heartPoints: entry.heartPoints,
       heartLevel: entry.heartLevel.level,
+      currentHeartValue: entry.heartLevel.currentHeartValue,
       pointsPath: entry.pointsPath,
     })),
     [
       {
         npcId: 'Connor',
+        displayName: 'Connor',
         heartPoints: 535,
         heartLevel: 1,
+        currentHeartValue: 1.7,
         pointsPath:
           `${PLAYERS_ARRAY_PATH}[0].Struct.npcRelationshipData_0.Array.value.Struct.value[0]` +
           '.Struct.heartPoints_0.Int',
       },
       {
         npcId: 'Macy',
+        displayName: 'Macy',
         heartPoints: 5250,
         heartLevel: 10,
+        currentHeartValue: 10,
         pointsPath:
           `${PLAYERS_ARRAY_PATH}[0].Struct.npcRelationshipData_0.Array.value.Struct.value[1]` +
           '.Struct.heartPoints_0.Int',
       },
       {
-        npcId: 'OverCap',
-        heartPoints: 6000,
-        heartLevel: 10,
+        npcId: 'alice',
+        displayName: 'Alice',
+        heartPoints: 300,
+        heartLevel: 1,
+        currentHeartValue: 1,
         pointsPath:
-          `${PLAYERS_ARRAY_PATH}[0].Struct.npcRelationshipData_0.Array.value.Struct.value[2]` +
+          `${PLAYERS_ARRAY_PATH}[0].Struct.npcRelationshipData_0.Array.value.Struct.value[3]` +
           '.Struct.heartPoints_0.Int',
       },
     ],
@@ -728,13 +748,16 @@ function testRelationshipHeartScaleUsesKnownThresholds() {
     level: 1,
     thresholdPoints: 300,
     nextThresholdPoints: 650,
+    currentHeartValue: 1.7,
     aboveKnownCap: false,
     betweenThresholds: true,
   });
+  assert.equal(relationshipPointsToHeartLevel(649).currentHeartValue, 1.9);
   assert.deepEqual(relationshipPointsToHeartLevel(5250), {
     level: 10,
     thresholdPoints: 5250,
     nextThresholdPoints: null,
+    currentHeartValue: 10,
     aboveKnownCap: false,
     betweenThresholds: false,
   });
@@ -742,6 +765,7 @@ function testRelationshipHeartScaleUsesKnownThresholds() {
     level: 10,
     thresholdPoints: 5250,
     nextThresholdPoints: null,
+    currentHeartValue: 10,
     aboveKnownCap: true,
     betweenThresholds: false,
   });
