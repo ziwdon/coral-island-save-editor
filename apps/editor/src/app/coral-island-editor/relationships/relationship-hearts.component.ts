@@ -32,7 +32,7 @@ export class RelationshipHeartsComponent {
 
     return readRelationshipHeartEntries(data, this.selectedPlayerIndex())
       .filter((entry) => relationshipHeartEntryMatches(entry, query))
-      .sort((a, b) => a.npcId.localeCompare(b.npcId));
+      .sort((a, b) => a.displayName.localeCompare(b.displayName));
   });
 
   protected selectPlayer(indexValue: string) {

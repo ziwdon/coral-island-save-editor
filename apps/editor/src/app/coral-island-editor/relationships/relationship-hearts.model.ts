@@ -4,10 +4,80 @@ import { getExistingPathValue } from '../../core/save-game/save-game-path';
 export const RELATIONSHIP_HEART_THRESHOLDS = [0, 300, 650, 1050, 1500, 2000, 2550, 3150, 3800, 4500, 5250] as const;
 export const MAX_RELATIONSHIP_HEART_LEVEL = RELATIONSHIP_HEART_THRESHOLDS.length - 1;
 
+const MAIN_RELATIONSHIP_CHARACTERS = [
+  ['Aaliyah', 'Aaliyah'],
+  ['Agung', 'Agung'],
+  ['alice', 'Alice'],
+  ['Anne', 'Anne'],
+  ['Antonio', 'Antonio'],
+  ['Archie', 'Archie'],
+  ['Ben', 'Ben'],
+  ['Betty', 'Betty'],
+  ['Bree', 'Bree'],
+  ['Chaem', 'Chaem'],
+  ['Charles', 'Charles'],
+  ['ChoOyu', 'Cho Oyu'],
+  ['Connor', 'Connor'],
+  ['Denali', 'Denali'],
+  ['Dinda', 'Dinda'],
+  ['Dippa', 'Dippa'],
+  ['Eleanor', 'Eleanor'],
+  ['Emily', 'Emily'],
+  ['Emma', 'Emma'],
+  ['Erika', 'Erika'],
+  ['Etna', 'Etna'],
+  ['Eva', 'Eva'],
+  ['Frank', 'Frank'],
+  ['Jack', 'Jack'],
+  ['Jim', 'Jim'],
+  ['Joko', 'Joko'],
+  ['Kenny', 'Kenny'],
+  ['KingKrakatoa', 'King Krakatoa'],
+  ['Kira', 'Kira'],
+  ['Leah', 'Leah'],
+  ['Lily', 'Lily'],
+  ['Ling', 'Ling'],
+  ['Luke', 'Luke'],
+  ['Macy', 'Macy'],
+  ['Mark', 'Mark'],
+  ['Millie', 'Millie'],
+  ['NIna', 'Nina'],
+  ['Noah', 'Noah'],
+  ['Olan', 'Olan'],
+  ['Oliver', 'Oliver'],
+  ['Pablo', 'Pablo'],
+  ['Paul', 'Paul'],
+  ['PrincessMiranjani', 'Princess Miranjani'],
+  ['QueenNandaDevi', 'Queen Nanda Devi'],
+  ['Rafael', 'Rafael'],
+  ['Raj', 'Raj'],
+  ['Randy', 'Randy'],
+  ['Rysy', 'Rysy'],
+  ['Sam', 'Sam'],
+  ['Scott', 'Scott'],
+  ['Semeru', 'Semeru'],
+  ['Slamet', 'Slamet'],
+  ['Suki', 'Suki'],
+  ['Sunny', 'Sunny'],
+  ['Surya', 'Surya'],
+  ['Tahat', 'Tahat'],
+  ['Theo', 'Theo'],
+  ['Valentina', 'Valentina'],
+  ['Wakuu', 'Wakuu'],
+  ['Walter', 'Walter'],
+  ['Wataru', 'Wataru'],
+  ['Yuri', 'Yuri'],
+  ['Zarah', 'Zarah'],
+  ['Zoe', 'Zoe'],
+] as const;
+
+const MAIN_RELATIONSHIP_CHARACTER_NAMES = new Map<string, string>(MAIN_RELATIONSHIP_CHARACTERS);
+
 export type RelationshipHeartLevel = {
   level: number;
   thresholdPoints: number;
   nextThresholdPoints: number | null;
+  currentHeartValue: number;
   aboveKnownCap: boolean;
   betweenThresholds: boolean;
 };
@@ -20,6 +90,7 @@ export type RelationshipPlayer = {
 export type RelationshipHeartEntry = {
   playerIndex: number;
   npcId: string;
+  displayName: string;
   heartPoints: number;
   heartLevel: RelationshipHeartLevel;
   pointsPath: string;
@@ -47,6 +118,7 @@ export function relationshipPointsToHeartLevel(points: number): RelationshipHear
     level,
     thresholdPoints,
     nextThresholdPoints,
+    currentHeartValue: currentRelationshipHeartValue(points, level, thresholdPoints, nextThresholdPoints),
     aboveKnownCap,
     betweenThresholds: !aboveKnownCap && points !== thresholdPoints,
   };
@@ -64,8 +136,9 @@ export function readRelationshipHeartEntries(data: unknown, playerIndex: number)
   return readArray(data, relationshipEntriesPath(playerIndex)).flatMap((entry, index) => {
     const npcId = readString(entry, 'Struct.npcId_0.Name');
     const heartPoints = readNumber(entry, 'Struct.heartPoints_0.Int');
+    const displayName = npcId ? MAIN_RELATIONSHIP_CHARACTER_NAMES.get(npcId) : undefined;
 
-    if (!npcId || heartPoints === null) {
+    if (!npcId || !displayName || heartPoints === null) {
       return [];
     }
 
@@ -73,6 +146,7 @@ export function readRelationshipHeartEntries(data: unknown, playerIndex: number)
       {
         playerIndex,
         npcId,
+        displayName,
         heartPoints,
         heartLevel: relationshipPointsToHeartLevel(heartPoints),
         pointsPath: `${relationshipEntriesPath(playerIndex)}[${index}].Struct.heartPoints_0.Int`,
@@ -82,7 +156,27 @@ export function readRelationshipHeartEntries(data: unknown, playerIndex: number)
 }
 
 export function relationshipHeartEntryMatches(entry: RelationshipHeartEntry, query: string): boolean {
-  return !query.trim() || entry.npcId.toLowerCase().includes(query.trim().toLowerCase());
+  const normalizedQuery = query.trim().toLowerCase();
+
+  return (
+    !normalizedQuery ||
+    entry.displayName.toLowerCase().includes(normalizedQuery) ||
+    entry.npcId.toLowerCase().includes(normalizedQuery)
+  );
+}
+
+function currentRelationshipHeartValue(
+  points: number,
+  level: number,
+  thresholdPoints: number,
+  nextThresholdPoints: number | null,
+): number {
+  if (points <= thresholdPoints || nextThresholdPoints === null) {
+    return level;
+  }
+
+  const fractionalLevel = level + (points - thresholdPoints) / (nextThresholdPoints - thresholdPoints);
+  return Math.min(Math.round(fractionalLevel * 10) / 10, level + 0.9);
 }
 
 function playerPath(index: number): string {

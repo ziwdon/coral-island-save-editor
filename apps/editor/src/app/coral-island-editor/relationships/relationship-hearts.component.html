@@ -39,21 +39,24 @@
       @for (entry of entries(); track entry.playerIndex + ':' + entry.npcId) {
         <article class="relationship-row">
           <div class="npc-name">
-            <h3>{{ entry.npcId }}</h3>
+            <h3>{{ entry.displayName }}</h3>
             @if (entry.heartLevel.aboveKnownCap) {
               <span class="state-badge warning">Above known cap</span>
-            } @else if (entry.heartLevel.betweenThresholds) {
-              <span class="state-badge">Between levels</span>
             }
           </div>
 
-          <div class="heart-controls" [attr.aria-label]="'Heart level for ' + entry.npcId">
+          <div class="heart-controls" [attr.aria-label]="'Heart level for ' + entry.displayName">
+            <div class="current-heart-value">
+              <span>Current</span>
+              <strong>{{ entry.heartLevel.currentHeartValue }} hearts</strong>
+            </div>
+
             <button
               class="step-button"
               type="button"
               [disabled]="!canDecrease(entry)"
               (click)="stepHeartLevel(entry, -1)"
-              [attr.aria-label]="'Decrease ' + entry.npcId + ' relationship heart level'"
+              [attr.aria-label]="'Decrease ' + entry.displayName + ' relationship heart level'"
             >
               -
             </button>
@@ -75,7 +78,7 @@
               type="button"
               [disabled]="!canIncrease(entry)"
               (click)="stepHeartLevel(entry, 1)"
-              [attr.aria-label]="'Increase ' + entry.npcId + ' relationship heart level'"
+              [attr.aria-label]="'Increase ' + entry.displayName + ' relationship heart level'"
             >
               +
             </button>
